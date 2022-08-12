@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import sys
 import mykmeanssp as km
+EPSILON = 10**-10   # good epsilon?
 
 
 class Goal(enum):
@@ -17,6 +18,37 @@ class Goal(enum):
         return (value == self.SPK) or (value == self.WAM) or (
             value == self.DDG) or (self.LNORM) or (self.JACOBI)
 
+
+
+# k := the number of clusters required.
+def execute(k, goal,input_filename):
+
+    input_matrix = pd.read_csv(input_filename)
+    
+    # check if goal is valid
+    if not Goal.has_value(goal):
+        print("Invalid Input!")
+        return 0
+
+    matrix = input_matrix.to_numpy()
+    # n := number of rows of the input file.
+    # d := number of columns of the input file.
+    n = matrix.shape(0)
+    d = matrix.shape(1)
+
+    # Check if the data is correct
+    if (k >= n) or (k < 0):
+        print("Invalid Input!")
+        return 0
+
+# last editing
+# ---------------------------------------------------------------------------------------------
+
+    # centroids Âµ1, Âµ2, ... , ÂµK âˆˆ R^d where 1<K<N.
+    centroids = buildCentroids(k, n, input_matrix)
+
+    matrix = km.fit(k, 300, EPSILON, n, d, input_array, centroids.tolist())
+    printMatrix(np.array(matrix))
 
 
 def buildCentroids(k, n, input_matrix):
@@ -82,37 +114,6 @@ def printIndex(matrix):
         if i + 1 != len(matrix.astype(int)):
             print(",", end="")
     print()
-
-
-# k := the number of clusters required.
-def execute(k, goal,input_filename):
-
-    input_matrix = pd.read_csv(input_filename)
-    
-    # check if goal is valid
-    if not Goal.has_value(goal):
-        print("Invalid Input!")
-        return 0
-
-    matrix = input_matrix.to_numpy()
-    # n := number of rows of the input file.
-    # d := number of columns of the input file.
-    n = matrix.shape(0)
-    d = matrix.shape(1)
-
-    # Check if the data is correct
-    if (k >= n) or (k < 0):
-        print("Invalid Input!")
-        return 0
-
-# last editing
-# ---------------------------------------------------------------------------------------------
-
-    # centroids Âµ1, Âµ2, ... , ÂµK âˆˆ R^d where 1<K<N.
-    centroids = buildCentroids(k, n, input_matrix)
-
-    matrix = km.fit(k, maxItr, epsilon, n, d, input_array, centroids.tolist())
-    printMatrix(np.array(matrix))
 
 
 # main

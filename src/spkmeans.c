@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <assert.h>
 #include <string.h>
 #include <spkmeans.h>
+
+#define EPSILON pow(10, -5)
 
 enum GOAL {
     SPK,
@@ -38,6 +41,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     
+    // good approach?
     if (strcmp(goal, "spk") == 0) {
         g = SPK;
     }
@@ -67,8 +71,129 @@ int main(int argc, char* argv[]) {
 }
 
 
+double weight(double** matrix, int index1, int index2, int dim) {
+    int i;
+    double value = 0;
+    double distance;
+    for (i = 0; i < dim; i++) {
+        distance = fabs(matrix[index1][i] - matrix[index2][i]);
+        value = pow(distance, 2.0);
+    }
+    value = exp(-((sqrt(value)) / 2));
+    return value;
+}
+
+
 /*
- *  create 2-dimensional arrays
+ * creates weighted matrix
+ */
+double** getWeightedMatrix(double** matrix, int cols, int rows) {
+    int i, j;
+    double** wMatrix;
+    double value;
+    wMatrix = createMat(cols, rows);
+    for (i = 0; i < rows; i++) {
+        for (j = 0; j < rows; j++) {
+            value = 0;
+            if (i != j) {
+                value = weight(matrix,i , j, cols);
+            }
+            wMatrix[i][j] = value;
+        }
+    }
+    return wMatrix;
+}
+
+
+/*
+ *  creates diagonal matrix
+ */
+double** getDiagonalMatrix(double** matrix, int dim) {
+    int i, j;
+    double** dMatrix = NULL;
+    dMatrix = createMat(dim, dim);
+    for (i = 0; i < dim; ++i) {
+        double sum = 0;
+        for (j = 0; j < dim; j++) {
+            sum += matrix[i][j];
+        }
+        dMatrix[i][i] = sum;
+    }
+    return dMatrix;
+}
+
+/*
+ *  creates diagonal degree matrix
+ */
+double** getDiagonalD(double** wMatrix, int dim) {
+    int i, j;
+    double** dmatrix = NULL;
+    dmatrix = getDiagonalMatrix(wMatrix, dim);
+    for (i = 0; i < dim; ++i) {
+        for (j = 0; j < dim; j++) {
+            if (dmatrix[i][j] != 0) {
+                dmatrix[i][j] = pow(dmatrix[i][j], -0.5);
+            }
+        }
+    }
+    return dmatrix;
+}
+
+
+/*
+ *  creates normalized laplacian matrix
+ */
+double** getLaplacianMat(double** weightMatrix, double** diagMatrix, int dim) {
+    int i, j;
+    double** temp = multiplyMatrices(diagMatrix, weight, dim);
+    double** lMatrix = multiplyMatrices(temp, diagMatrix, dim);
+    for (i = 0; i < dim; i++) {
+        for (j = 0; j < dim; j++) {
+            if (i == j) {
+                lMatrix[i][j] = 1 - lMatrix[i][j];
+            } else {
+                lMatrix[i][j] = -(lMatrix[i][j]);
+            }
+        }
+    }
+    freeMemory(temp, dim);
+    return lMatrix;
+}
+
+
+/*
+ *  Part of step 5
+ *  calculate off(A)^2
+ */
+double offOfMat(double** matrix, int dim) {
+    double value = 0;
+    int i, j;
+    for (i = 0; i < dim; i++) {
+        for (j = 0; j < dim; j++) {
+            if (i != j) {
+               value += pow(matrix[i][j], 2.0);
+            }
+        }
+    }
+    return value;
+}
+
+
+/*
+ *  Jacobi algorithm
+ */
+double** jacobiAlgorithm(double** matrix, int dim) {
+    double offset = 0;
+    int iter = 0;
+    // convergence condition
+    while (iter < 0 || EPSILON < offset ) {
+
+    }
+}
+
+
+/*
+ *  creates 2-dimensional arrays
  */
 double** createMat(int col, int row){
     int i;
@@ -105,8 +230,8 @@ double** multiplyMatrices(double** matrix1, double** matrix2, int dim) {
     for (i = 0; i < dim; ++i) {
         for (j = 0; j < dim; ++j) {
             for (k = 0; k < dim; ++k) {
-                mat[i][j] = matrix1[i][k] * matrix2[k][j]
-            }
+                mat[i][j] = matrix1[i][k] * matrix2[k][j];
+          }
         }
     }
     return mat;
