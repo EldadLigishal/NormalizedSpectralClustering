@@ -4,6 +4,14 @@
 #include <string.h>
 #include <spkmeans.h>
 
+enum GOAL {
+    SPK,
+    WAM,
+    DDG,
+    LNORM,
+    JACOBI
+};
+
 
 /*
  * argc := number of inputs.
@@ -11,13 +19,52 @@
  * argv[0] is the name of the program.
  */
 int main(int argc, char* argv[]) {
-    FILE *ifp;
+    FILE *input_file;
     int k, i, n, j;
+    char* goal;
+    enum GOAL g;
 
+    if (argc != 3) {
+        printf("Invalid Input!");
+        return 0;
+    }
 
-    assert(argc > 0);
+    k = atoi(argv[1]);
+    goal = argv[2];
+    input_file = fopen(argv[3], "r");
+
+    if (input_file == NULL) {
+        printf("Invalid Input!");
+        return 0;
+    }
+    
+    if (strcmp(goal, "spk") == 0) {
+        g = SPK;
+    }
+
+    if (strcmp(goal, "wam") == 0) {
+        g = WAM;
+    }
+
+    if (strcmp(goal, "ddg") == 0) {
+        g = DDG;
+    }
+
+    if (strcmp(goal, "lnorm") == 0) {
+        g = LNORM;
+    }
+
+    if (strcmp(goal, "jacobi") == 0) {
+        g = JACOBI;
+    }
+
+    if ((g != SPK) && (g != WAM) && (g != DDG) && 
+        (g != LNORM) && (g != JACOBI)) {
+        printf("Invalid Input!");
+        return 0;
+    }
+    return 0;
 }
-
 
 
 /*
@@ -27,13 +74,12 @@ double** createMat(int col, int row){
     int i;
     double ** matrix = (double**)malloc(col* sizeof(double *));
     assert(matrix != NULL);
-    for(i=0;i<col;i++){
-        matrix[i]= (double*)malloc(row* sizeof(double ));
+    for(i=0; i < col; ++i){
+        matrix[i]= (double*)malloc(row* sizeof(double));
         assert(matrix[i] != NULL);
     }
     return matrix;
 }
-
 
 
 double** transpose(double** inputMat, int dim) {
@@ -47,6 +93,7 @@ double** transpose(double** inputMat, int dim) {
     }
     return mat;
 }
+
 
 /*
  *  multiply 2 matrices
