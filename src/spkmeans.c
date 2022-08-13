@@ -5,10 +5,11 @@
 #include <string.h>
 #include <spkmeans.h>
 
+// constants
 #define EPSILON pow(10, -5)
+#define LINESIZE 1000
 
 enum GOAL {
-    SPK,
     WAM,
     DDG,
     LNORM,
@@ -23,15 +24,18 @@ enum GOAL {
  */
 int main(int argc, char* argv[]) {
     FILE *input_file;
-    int k, i, n, j;
+    int k, i, n, d, j;
     char* goal;
     enum GOAL g;
+    double **inputMatrix;
 
+    assert(argc > 0);
     if (argc != 3) {
         printf("Invalid Input!");
         return 0;
     }
 
+    // read the input
     k = atoi(argv[1]);
     goal = argv[2];
     input_file = fopen(argv[3], "r");
@@ -40,33 +44,47 @@ int main(int argc, char* argv[]) {
         printf("Invalid Input!");
         return 0;
     }
-    
-    // good approach?
-    if (strcmp(goal, "spk") == 0) {
-        g = SPK;
-    }
 
+    /*
+     * calculating the coloumns and rows of the input file
+     */
+    n = calculateRows(input_file);  // cloumns
+    d = calculateCol(input_file);   // rows
+
+    /*
+     * build a matrix from input file
+     */
+    inputMatrix = createMat(n, d);
+    assert(inputMatrix != NULL);
+    fclose(input_file);
+
+    // good approach?
     if (strcmp(goal, "wam") == 0) {
         g = WAM;
+        printWAM(input_file, n, d);
     }
 
     if (strcmp(goal, "ddg") == 0) {
         g = DDG;
+        printDDG(input_file, n, d);
     }
 
     if (strcmp(goal, "lnorm") == 0) {
         g = LNORM;
+        printLNORM(input_file, n, d);
     }
 
     if (strcmp(goal, "jacobi") == 0) {
         g = JACOBI;
+        printJACOBI(input_file, n, d);
     }
 
-    if ((g != SPK) && (g != WAM) && (g != DDG) && 
+    if ((g != WAM) && (g != DDG) && 
         (g != LNORM) && (g != JACOBI)) {
         printf("Invalid Input!");
         return 0;
     }
+    freeMemory(inputMatrix, n);
     return 0;
 }
 
@@ -162,6 +180,22 @@ double** getLaplacianMat(double** weightMatrix, double** diagMatrix, int dim) {
 
 
 /*
+ * check if a matrix is diagonal
+ */
+int isDiagonalMatrix(double** matrix, int dim) {
+    int i, j;
+    for (i = 0; i < dim; i++) {
+        for (j = 0; j < dim; j++) {
+            if ((i != j) && matrix[i][j] != 0) {
+               return 0;    //return false
+            }
+        }
+    }
+    return 1;   //return true
+}
+
+
+/*
  *  Part of step 5
  *  calculate off(A)^2
  */
@@ -185,10 +219,28 @@ double offOfMat(double** matrix, int dim) {
 double** jacobiAlgorithm(double** matrix, int dim) {
     double offset = 0;
     int iter = 0;
+
+    // building a rotation matrix P
+    double **pMatrix = getRotaionMat(matrix, dim);  // NEED TO BUILD THIS FINCTION!!!
+
+    // building matrix A'
+    double **aTagTemp = multiplyMatrices(transpose(pMatrix, dim), matrix, dim);
+    double **aTagMat = multiplyMatrices(aTagTemp, pMatrix, dim);
+
+    // repeat until A' is diagonal matrix
+    while (isDiagonalMatrix(aTagMat, dim) == 0) {
+        double **aTagTemp = multiplyMatrices(transpose(pMatrix, dim), aTagMat, dim);
+        double **aTagMat = multiplyMatrices(aTagTemp, pMatrix, dim);
+    }
+
+    double **aMatrix = aTagMat;
     // convergence condition
     while (iter < 0 || EPSILON < offset ) {
-
+    
     }
+
+
+    freeMemory(aTagTemp, dim);
 }
 
 
@@ -230,11 +282,152 @@ double** multiplyMatrices(double** matrix1, double** matrix2, int dim) {
     for (i = 0; i < dim; ++i) {
         for (j = 0; j < dim; ++j) {
             for (k = 0; k < dim; ++k) {
-                mat[i][j] = matrix1[i][k] * matrix2[k][j];
+                mat[i][j] += matrix1[i][k] * matrix2[k][j];
           }
         }
     }
     return mat;
+}
+
+
+/*
+ * calculation the number of col in fileName
+ */
+int calculateCol(char* fileName){
+    int cnt = 0;
+    FILE* ifp;
+    char* token;
+    const char breaks[] = ",";
+    char line[LINESIZE];
+    /*
+     * open file
+     */
+    ifp = fopen(fileName,"r");
+    if(ifp == NULL) {
+        printf("Invalid Input! \n");
+        return -1;
+    }
+    /*
+     * calculating the number of col
+     */
+    fgets(line, 1000, ifp);
+    token = strtok(line, breaks);
+    while(token != NULL)
+    {
+        token = strtok(NULL, breaks);
+        ++cnt;
+    }
+
+    /*
+     * close file
+     */
+    fclose(ifp);
+    return cnt;
+
+}
+
+
+/*
+ * calculate the number of rows in fileName
+ */
+int calculateRows(char* fileName){
+    int cnt = 0;
+    char line[LINESIZE];
+    FILE* ifp;
+
+    /*
+     * open file
+     */
+    ifp = fopen(fileName,"r");
+    if(ifp ==NULL) {
+        printf("Invalid Input! \n");
+        return 0;
+    }
+    /*
+     * calculating the number of rows
+     */
+    while (fgets(line, LINESIZE, ifp) != NULL){
+        cnt++;
+    }
+    /*
+     * close file
+     */
+    fclose(ifp);
+    return cnt ;
+}
+
+
+/*
+ * fill 2-dimensional arrays
+ */
+void fillMat(char* fileName,double** inputMat){
+    FILE* ifp;
+    char* token;
+    const char breaks[] = ",";
+    char line[LINESIZE];
+    int row=0,col=0;
+    char* useless=NULL;
+
+    ifp = fopen(fileName,"r");
+    if(ifp == NULL) {
+        printf("Invalid Input! \n");
+        return;
+    }
+    while (fgets(line,LINESIZE,ifp) != NULL){
+        token = strtok(line,breaks);
+        while (token != NULL){
+            inputMat[row][col] = strtod(token, &useless);
+            token = strtok(NULL,breaks);
+            col++;
+        }
+        col=0;
+        row++;
+    }
+    fclose(ifp);
+}
+
+
+void printWAM(double** matrix, int col,int row) {
+    double **wMatrix = getWeightedMatrix(matrix, col, row);
+    printMat(wMatrix, row, row);
+    freeMemory(wMatrix, row);
+}
+
+
+void printDDG(double** matrix, int col,int row) {
+    double **wMatrix = getWeightedMatrix(matrix, col, row);
+    double **dMatrix = getDiagonalD(matrix, row);
+    printMat(dMatrix, row, row);
+    freeMemory(wMatrix, row);
+    freeMemory(dMatrix, row);
+}
+
+
+void printLNORM(double** matrix, int col, int row) {
+    double **wMatrix = getWeightedMatrix(matrix, col, row);
+    double **dMatrix = getDiagonalD(matrix, row);
+    double **lMatrix = getLaplacianMat(wMatrix, dMatrix, row);
+    printMat(lMatrix, row, row);
+    freeMemory(wMatrix, row);
+    freeMemory(dMatrix, row);
+    freeMemory(lMatrix, row);
+}
+
+void printJACOBI(double** matrix, int col,int row) {}
+
+
+void printMat(double** matrix, int col,int row){
+    int i, j;
+    
+    printf("\nPrinting the 2D Array\n");
+    for(i = 0; i < j; i++)
+    {
+        for(j = 0; j < i; j++)
+        {
+            printf("%.4f|", matrix[i][j]);
+        }
+        printf("\n\n");
+    }
 }
 
 

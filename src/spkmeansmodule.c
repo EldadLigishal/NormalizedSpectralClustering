@@ -104,3 +104,46 @@ PyMODINIT_FUNC PyInit_mykmeanssp(void) {
     }
     return m;
 }
+
+
+/*
+ *  creates 2-dimensional arrays
+ */
+double** createMat(int col, int row){
+    int i;
+    double ** matrix = (double**)malloc(col* sizeof(double *));
+    assert(matrix != NULL);
+    for(i=0; i < col; ++i){
+        matrix[i]= (double*)malloc(row* sizeof(double));
+        assert(matrix[i] != NULL);
+    }
+    return matrix;
+}
+
+
+double** calculateCentroids(double epsilon, double** inputMat, double** clusters){
+    int i,j;
+    /*
+     *  groupOfClusters := group of clusters by S1,...,SK, each cluster Sj is represented by it’s
+     *    centroid  which is the mean µj ∈ Rd of the cluster’s members.
+     */
+    double** groupOfClusters = NULL;
+    /*
+     *  groupOfClusters := [[0.0,0.0,0.0,0,0,0.0]
+     *                     ,[0.0,0.0,0.0,0,0,0.0]]
+     */
+    groupOfClusters = createMat(k, n);
+    assert(groupOfClusters != NULL);
+    for(i=0; i<k; i++){
+        for(j=0;j<n;j++){
+            groupOfClusters[i][j] = 0.0;
+        }
+    }
+    algorithm(clusters,inputMat,groupOfClusters, epsilon);
+
+    /*
+     * freeing memory
+     */
+    freeMemory(groupOfClusters, k);
+    return clusters;
+}
