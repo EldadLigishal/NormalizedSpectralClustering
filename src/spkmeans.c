@@ -106,33 +106,37 @@ double calculateWeight(double** matrix, int index1, int index2, int dim){
  * wii = 0 for all i’s
  * the rest of the values are set to: wij = exp(−||xi − xj||/2)
  */
-double** getWeightedMatrix(double** matrix, int n){
+double** getWeightedMatrix(double** matrix, int dim){
     int i, j;
     double** wMatrix;
-    wMatrix = createMat(n, n);
+    wMatrix = createMat(dim, dim);
     if(!wMatrix){
         printf("An Error Has Occured");
         exit(0);
     }
-    for (i = 0; i < n; i++) {
-        for (j = (i+1); j < n; j++) {
-            wMatrix[i][j] = calculateWeight(matrix,i , j, n);
+    for (i = 0; i < dim; i++) {
+        for (j = (i+1); j < dim; j++) {
+            wMatrix[i][j] = calculateWeight(matrix,i , j, dim);
             wMatrix[j][i] = wMatrix[i][j];
         }
     }
     return wMatrix;
 }
 
-
 /*
- *  creates diagonal matrix
+ * if i=j dij = sumOf(wiz) for all z=1..n, otherwise dij=0
  */
-double** getDiagonalMatrix(double** matrix, int dim) {
+double** getDiagonalMatrix(double** matrix, int dim){
     int i, j;
-    double** dMatrix = NULL;
+    double sum;
+    double** dMatrix;
     dMatrix = createMat(dim, dim);
-    for (i = 0; i < dim; ++i) {
-        double sum = 0;
+    if(!dMatrix){
+        printf("An Error Has Occurred");
+        exit(0);
+    }
+    for (i = 0; i < dim; ++i){
+        sum = 0;
         for (j = 0; j < dim; j++) {
             sum += matrix[i][j];
         }
@@ -142,22 +146,21 @@ double** getDiagonalMatrix(double** matrix, int dim) {
 }
 
 /*
- *  creates diagonal degree matrix
+ * Form the diagonal degree matrix D ∈ R^(n×n).
+ * the diagonal equals to the sum of the i-th row of W.
  */
-double** getDiagonalD(double** wMatrix, int dim) {
+double** getDiagonalDegreeMatrix(double** Matrix, int dim){
     int i, j;
-    double** dmatrix = NULL;
-    dmatrix = getDiagonalMatrix(wMatrix, dim);
+    double** dMatrix;
+    double** wMatrix;
+    wMatrix = getWeightedMatrix(matrix, dim);
+    dMatrix = getDiagonalMatrix(wMatrix, dim);
     for (i = 0; i < dim; ++i) {
-        for (j = 0; j < dim; j++) {
-            if (dmatrix[i][j] != 0) {
-                dmatrix[i][j] = pow(dmatrix[i][j], -0.5);
-            }
-        }
+        dMatrix[i][i] = pow(sqrt(dMatrixrix[i][i]), -0.5);
     }
-    return dmatrix;
+    freeMemory(wMatrix,dim);
+    return dMatrix;
 }
-
 
 /*
  *  creates normalized laplacian matrix
@@ -510,4 +513,4 @@ void freeMemory(double** matrix ,int len){
         free(matrix[i]);
     }
     free(matrix);
-}   
+}
