@@ -41,6 +41,11 @@ def execute(k, goal,input_filename):
         print("Invalid Input!")
         return 0
 
+
+    if k == 0:
+        k = getEigenGap()
+    
+    
 # last editing
 # ---------------------------------------------------------------------------------------------
 

@@ -5,9 +5,6 @@
 #include <string.h>
 #include <spkmeans.h>
 
-// constants
-#define EPSILON pow(10, -5)
-#define LINESIZE 1000
 
 enum GOAL {
     WAM,
@@ -40,6 +37,12 @@ int main(int argc, char* argv[]) {
     goal = argv[2];
     input_file = fopen(argv[3], "r");
 
+    if (k < 0) {
+        printf("Invalid Input!");
+        return 0;
+    }
+
+
     if (input_file == NULL) {
         printf("Invalid Input!");
         return 0;
@@ -57,6 +60,10 @@ int main(int argc, char* argv[]) {
     inputMatrix = createMat(n, d);
     assert(inputMatrix != NULL);
     fclose(input_file);
+
+    double **weightedMatrix = getWeightedMatrix(inputMatrix, n, d);
+    double **diagMatrix = getDiagonalD(weightedMatrix, d);
+    double **lapMatrix = getLaplacianMat(weightedMatrix, diagMatrix, d);
 
     // good approach?
     if (strcmp(goal, "wam") == 0) {
@@ -212,6 +219,65 @@ double offOfMat(double** matrix, int dim) {
     return value;
 }
 
+int getSign(double number) {
+    if (number >= 0) {
+        return 1;
+    }
+    return -1;
+}
+
+
+double** getUnitMatrix(int dim) {
+    int i, j;
+    double **matrix = createMat(dim, dim);
+    for ( i = 0; i < dim; i++) {
+        for ( j = 0; j < dim; i++) {
+            if (i == j) {
+                matrix[i][j] = 1;
+            } else {        // TODO: CHANGE CREATEMATRIX TO CALLOC
+                matrix[i][j] = 0;
+            }
+        }
+    }
+    return matrix;
+}
+
+
+double** getRotationMat(double **matrix, int dim) {
+    int i, j;
+    int index_i = 0;
+    int index_j = 1;
+    int sign_theta;
+    double t, c, s;
+    double **pMat;
+    double theta = 0;
+    double maxValue = matrix[0][1];
+    
+    for (i = 0; i < dim - 1; i++) {
+        for ( j = i + 1; i < dim; j++) {
+            if (maxValue < matrix[i][j]) {
+                maxValue = matrix[i][j];
+                index_i = i;
+                index_j = j;
+            }
+        }
+    }
+
+    theta = ((matrix[index_j][index_j] - matrix[index_i][index_i])
+     / 2*matrix[index_i][index_j]);
+    sign_theta = getSign(theta);
+    
+    t = (sign_theta / (fabs(theta) + sqrt(pow(theta, 2) + 1)));
+    c = (1 / sqrt(pow(t, 2) + 1));
+    s = c * t;
+    pMat = getUnitMatrix(dim);
+    pMat[index_i][index_i] = c;
+    pMat[index_i][index_j] = s;
+    pMat[index_j][index_j] = c;
+    pMat[index_j][index_i] = -s;
+
+    return pMat;
+}
 
 /*
  *  Jacobi algorithm
@@ -220,24 +286,26 @@ double** jacobiAlgorithm(double** matrix, int dim) {
     double offset = 0;
     int iter = 0;
 
-    // building a rotation matrix P
-    double **pMatrix = getRotaionMat(matrix, dim);  // NEED TO BUILD THIS FINCTION!!!
 
+    // building a rotation matrix P
+    double **pMatrix = getRotaionMat(matrix, dim);      //TODO: Check if we are in even iteration?
+    double **vMatrix = getRotaionMat(matrix, dim);
     // building matrix A'
     double **aTagTemp = multiplyMatrices(transpose(pMatrix, dim), matrix, dim);
     double **aTagMat = multiplyMatrices(aTagTemp, pMatrix, dim);
 
+    offset = offOfMat(matrix, dim) - offOfMat(aTagMat, dim);
+
     // repeat until A' is diagonal matrix
-    while (isDiagonalMatrix(aTagMat, dim) == 0) {
-        double **aTagTemp = multiplyMatrices(transpose(pMatrix, dim), aTagMat, dim);
-        double **aTagMat = multiplyMatrices(aTagTemp, pMatrix, dim);
+    while ((isDiagonalMatrix(aTagMat, dim) == 0) || (iter < 100 || EPSILON < offset )) {
+        pMatrix = getRotaionMat(aTagMat, dim);
+        vMatrix = multiplyMatrices(vMatrix, pMatrix, dim);
+        aTagTemp = multiplyMatrices(transpose(pMatrix, dim), aTagMat, dim);
+        aTagMat = multiplyMatrices(aTagTemp, pMatrix, dim);
+        offset = offOfMat(matrix, dim) - offOfMat(aTagMat, dim);
     }
 
     double **aMatrix = aTagMat;
-    // convergence condition
-    while (iter < 0 || EPSILON < offset ) {
-    
-    }
 
 
     freeMemory(aTagTemp, dim);
@@ -246,6 +314,7 @@ double** jacobiAlgorithm(double** matrix, int dim) {
 
 /*
  *  creates 2-dimensional arrays
+ *  NEEDS TO CHANGE TO CALLOC
  */
 double** createMat(int col, int row){
     int i;
