@@ -1,17 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
-#include <assert.h>
+#include "math.h"
+#include "assert.h"
 #include <string.h>
-#include <spkmeans.h>
-
-
-enum GOAL {
-    WAM,
-    DDG,
-    LNORM,
-    JACOBI
-};
+#include "spkmeans.h"
 
 
 /*
@@ -23,35 +15,34 @@ int main(int argc, char* argv[]) {
     FILE *input_file;
     int k, i, n, d, j;
     char* goal;
-    enum GOAL g;
+    GOAL g;
     double **inputMatrix;
+    int validGoal =0;
 
     assert(argc > 0);
-    if (argc != 3) {
+    if (argc != 4) {
         printf("Invalid Input!");
         return 0;
     }
 
     // read the input
     k = atoi(argv[1]);
-    goal = argv[2];
-    input_file = fopen(argv[3], "r");
-
-    if (k < 0) {
+    if (k < 0){
         printf("Invalid Input!");
         return 0;
     }
-
-
-    if (input_file == NULL) {
+    goal = argv[2];
+    input_file = fopen(argv[3], "r");
+    if (input_file == NULL){
         printf("Invalid Input!");
         return 0;
     }
 
     /*
-     * calculating the coloumns and rows of the input file
+     * calculating the columns and rows of the input file
+     * check if k==n?
      */
-    n = calculateRows(input_file);  // cloumns
+    n = calculateRows(input_file);  // columns
     d = calculateCol(input_file);   // rows
 
     /*
@@ -65,65 +56,68 @@ int main(int argc, char* argv[]) {
     double **diagMatrix = getDiagonalD(weightedMatrix, d);
     double **lapMatrix = getLaplacianMat(weightedMatrix, diagMatrix, d);
 
-    // good approach?
-    if (strcmp(goal, "wam") == 0) {
+    if (strcmp(goal, "spk") == 0){
+        g = SPK;
+        validGoal=1;
+    }
+    if (strcmp(goal, "wam") == 0){
         g = WAM;
-        printWAM(input_file, n, d);
+        validGoal=1;
     }
-
-    if (strcmp(goal, "ddg") == 0) {
+    if (strcmp(goal, "ddg") == 0){
         g = DDG;
-        printDDG(input_file, n, d);
+        validGoal=1;
     }
-
-    if (strcmp(goal, "lnorm") == 0) {
+    if (strcmp(goal, "lnorm") == 0){
         g = LNORM;
-        printLNORM(input_file, n, d);
+        validGoal=1;
     }
-
-    if (strcmp(goal, "jacobi") == 0) {
+    if (strcmp(goal, "jacobi") == 0){
         g = JACOBI;
-        printJACOBI(input_file, n, d);
+        validGoal=1;
     }
-
-    if ((g != WAM) && (g != DDG) && 
-        (g != LNORM) && (g != JACOBI)) {
+    if(validGoal == 0){
         printf("Invalid Input!");
         return 0;
     }
+
     freeMemory(inputMatrix, n);
     return 0;
 }
 
-
-double weight(double** matrix, int index1, int index2, int dim) {
+/*
+ * calculate the value of exp(−||xi − xj||/2)
+ */
+double calculateWeight(double** matrix, int index1, int index2, int dim){
     int i;
     double value = 0;
     double distance;
     for (i = 0; i < dim; i++) {
         distance = fabs(matrix[index1][i] - matrix[index2][i]);
-        value = pow(distance, 2.0);
+        value += pow(distance, 2.0);
     }
-    value = exp(-((sqrt(value)) / 2));
+    value = exp((-1)*( (sqrt(value)) / 2));
     return value;
 }
 
-
 /*
- * creates weighted matrix
+ * Form the weighted adjacency matrix W ∈ R^(n×n).
+ * The weights are symmetric (wij = wji) and non-negative (wij ≥ 0).
+ * wii = 0 for all i’s
+ * the rest of the values are set to: wij = exp(−||xi − xj||/2)
  */
-double** getWeightedMatrix(double** matrix, int cols, int rows) {
+double** getWeightedMatrix(double** matrix, int n){
     int i, j;
     double** wMatrix;
-    double value;
-    wMatrix = createMat(cols, rows);
-    for (i = 0; i < rows; i++) {
-        for (j = 0; j < rows; j++) {
-            value = 0;
-            if (i != j) {
-                value = weight(matrix,i , j, cols);
-            }
-            wMatrix[i][j] = value;
+    wMatrix = createMat(n, n);
+    if(!wMatrix){
+        printf("An Error Has Occured");
+        exit(0);
+    }
+    for (i = 0; i < n; i++) {
+        for (j = (i+1); j < n; j++) {
+            wMatrix[i][j] = calculateWeight(matrix,i , j, n);
+            wMatrix[j][i] = wMatrix[i][j];
         }
     }
     return wMatrix;
@@ -315,6 +309,7 @@ double** jacobiAlgorithm(double** matrix, int dim) {
 /*
  *  creates 2-dimensional arrays
  *  NEEDS TO CHANGE TO CALLOC
+ *  TODO matrix full of zeroz
  */
 double** createMat(int col, int row){
     int i;
@@ -515,4 +510,4 @@ void freeMemory(double** matrix ,int len){
         free(matrix[i]);
     }
     free(matrix);
-}
+}   
