@@ -4,6 +4,7 @@
 #include "assert.h"
 #include <string.h>
 #include "spkmeans.h"
+#include <stdbool.h>
 
 
 /*
@@ -149,80 +150,128 @@ double** getDiagonalMatrix(double** matrix, int dim){
  * Form the diagonal degree matrix D ∈ R^(n×n).
  * the diagonal equals to the sum of the i-th row of W.
  */
-double** getDiagonalDegreeMatrix(double** Matrix, int dim){
-    int i, j;
+double** getDiagonalDegreeMatrix(double** matrix, int dim){
+    int i;
     double** dMatrix;
     double** wMatrix;
     wMatrix = getWeightedMatrix(matrix, dim);
     dMatrix = getDiagonalMatrix(wMatrix, dim);
     for (i = 0; i < dim; ++i) {
-        dMatrix[i][i] = pow(sqrt(dMatrixrix[i][i]), -0.5);
+        dMatrix[i][i] = pow(sqrt(dMatrix[i][i]), -0.5);
     }
     freeMemory(wMatrix,dim);
     return dMatrix;
 }
 
 /*
- *  creates normalized laplacian matrix
+ * Form The Normalized Graph Laplacian matrix Lnorm ∈ R^(n×n).
+ * Lnorm = I − (D^(-1/2) * W * D^(-1/2))
+ *       = ( (Diagonal Degree Matrix * Weighted Matrix) * Diagonal Degree Matrix )
  */
-double** getLaplacianMat(double** weightMatrix, double** diagMatrix, int dim) {
+double** getLaplacianMatrix(double** matrix, int dim){
     int i, j;
-    double** temp = multiplyMatrices(diagMatrix, weight, dim);
-    double** lMatrix = multiplyMatrices(temp, diagMatrix, dim);
+    double** wMatrix;
+    double** dMatrix;
+    double** lnormMatrix;
+    double** temp;
+    wMatrix = getWeightedMatrix(matrix,dim);
+    if(!wMatrix){
+        printf("An Error Has Occured");
+        exit(0);
+    }
+    dMatrix = getDiagonalDegreeMatrix(matrix,dim);
+    if(!dMatrix){
+        printf("An Error Has Occured");
+        exit(0);
+    }
+    /*
+     * temp = D^(-1/2) * W
+     */
+    temp = multiplyMatrices(dMatrix, wMatrix, dim);
+    if(!temp){
+        printf("An Error Has Occured");
+        exit(0);
+    }
+    /*
+     * lnormMatrix = (D^(-1/2) * W)*D^(-1/2)
+     */
+    lnormMatrix = multiplyMatrices(temp, dMatrix, dim);
+    if(!lnormMatrix){
+        printf("An Error Has Occured");
+        exit(0);
+    }
     for (i = 0; i < dim; i++) {
         for (j = 0; j < dim; j++) {
             if (i == j) {
-                lMatrix[i][j] = 1 - lMatrix[i][j];
+                LnormMatrix[i][j] = 1 - LnormMatrix[i][j];
             } else {
-                lMatrix[i][j] = -(lMatrix[i][j]);
+                LnormMatrix[i][j] = ((-1)*(LnormMatrix[i][j]));
             }
         }
     }
     freeMemory(temp, dim);
-    return lMatrix;
+    freeMemory(wMatrix,dim);
+    freeMemory(dMatrix,dim);
+    return LnormMatrix;
 }
-
-
 /*
  * check if a matrix is diagonal
+ * diagonal matrix is a square matrix that consists of all zeros off the main diagonal.
  */
-int isDiagonalMatrix(double** matrix, int dim) {
+bool isDiagonalMatrix(double** matrix, int dim){
     int i, j;
     for (i = 0; i < dim; i++) {
         for (j = 0; j < dim; j++) {
             if ((i != j) && matrix[i][j] != 0) {
-               return 0;    //return false
+               return false;
             }
         }
     }
-    return 1;   //return true
+    return true;
 }
-
-
 /*
- *  Part of step 5
- *  calculate off(A)^2
+ * Let off(A)^2 be the sum of squares of all off-diagonal elements of A respectively.
  */
 double offOfMat(double** matrix, int dim) {
     double value = 0;
     int i, j;
     for (i = 0; i < dim; i++) {
-        for (j = 0; j < dim; j++) {
+        for (j = i; j < dim; j++) {
             if (i != j) {
-               value += pow(matrix[i][j], 2.0);
+               value += pow(matrix[i][j], 2.0) + pow(matrix[j][i],2);
             }
         }
     }
     return value;
 }
-
+/*
+ * sign(x) = 1 if x>=0, else 0
+ */
 int getSign(double number) {
     if (number >= 0) {
         return 1;
     }
     return -1;
 }
-
+/*
+ * The Eigengap Heuristic
+ * In order to determine the number of clusters k, we will use eigengap heuristic.
+ */
+int getEigengapHeuristic(double* array,int len){
+    int maxIndex=0;
+    int i;
+    double deltaMax=0;
+    /*
+    * δ_max >= δi (= |λi − λi+1|)
+    */
+    for(i = 0; i < floor(len/2) ; i++){
+        if( fabs(array[i]-array[i+1]) > deltaMax){
+            maxIndex=i;
+            deltaMax=fabs(array[i]-array[i+1]);
+        }
+    }
+    return maxIndex+1;
+}
 
 double** getUnitMatrix(int dim) {
     int i, j;
@@ -238,8 +287,6 @@ double** getUnitMatrix(int dim) {
     }
     return matrix;
 }
-
-
 double** getRotationMat(double **matrix, int dim) {
     int i, j;
     int index_i = 0;
@@ -251,7 +298,7 @@ double** getRotationMat(double **matrix, int dim) {
     double maxValue = matrix[0][1];
     
     for (i = 0; i < dim - 1; i++) {
-        for ( j = i + 1; i < dim; j++) {
+        for ( j = i + 1; j < dim; j++) {
             if (maxValue < matrix[i][j]) {
                 maxValue = matrix[i][j];
                 index_i = i;
@@ -312,7 +359,7 @@ double** jacobiAlgorithm(double** matrix, int dim) {
 /*
  *  creates 2-dimensional arrays
  *  NEEDS TO CHANGE TO CALLOC
- *  TODO matrix full of zeroz
+ *  matrix full of zeroz
  */
 double** createMat(int col, int row){
     int i;
@@ -324,23 +371,27 @@ double** createMat(int col, int row){
     }
     return matrix;
 }
-
-
-double** transpose(double** inputMat, int dim) {
-    int i, j;
-    double** mat;
-    mat = createMat(dim, dim);
-    for (i = 0; i < dim; i++) {
-        for (j = 0; j < dim; j++) {
-            mat[i][j] = inputMat[j][i];
-        }
-    }
-    return mat;
-}
-
-
 /*
- *  multiply 2 matrices
+ * Check if we have freed the input matrix
+ */
+double** transpose(double** matrix, int dim){
+    int i, j;
+    double** tMatrix;
+    tMatrix = createMat(dim, dim);
+    if(!tMatrix){
+        printf("An Error Has Occured");
+        exit(0);
+    }
+    for ( i = 0; i < dim; ++i)
+        for ( j = 0; j < dim; ++j) {
+            tMatrix[j][i] = matrix[i][j];
+        }
+    return tMatrix;
+}
+/*
+ *  multiplying matrices dimXdim
+ *  the number of columns in the first matrix must be equal
+ *  to the number of rows in the second matrix.
  */
 double** multiplyMatrices(double** matrix1, double** matrix2, int dim) {
     int j, i, k;
@@ -348,6 +399,7 @@ double** multiplyMatrices(double** matrix1, double** matrix2, int dim) {
     mat = createMat(dim, dim);
     for (i = 0; i < dim; ++i) {
         for (j = 0; j < dim; ++j) {
+            mat[i][j]=0;
             for (k = 0; k < dim; ++k) {
                 mat[i][j] += matrix1[i][k] * matrix2[k][j];
           }
@@ -355,10 +407,8 @@ double** multiplyMatrices(double** matrix1, double** matrix2, int dim) {
     }
     return mat;
 }
-
-
 /*
- * calculation the number of col in fileName
+ * calculate the number of col in fileName
  */
 int calculateCol(char* fileName){
     int cnt = 0;
@@ -392,8 +442,6 @@ int calculateCol(char* fileName){
     return cnt;
 
 }
-
-
 /*
  * calculate the number of rows in fileName
  */
@@ -422,8 +470,6 @@ int calculateRows(char* fileName){
     fclose(ifp);
     return cnt ;
 }
-
-
 /*
  * fill 2-dimensional arrays
  */
@@ -452,52 +498,6 @@ void fillMat(char* fileName,double** inputMat){
     }
     fclose(ifp);
 }
-
-
-void printWAM(double** matrix, int col,int row) {
-    double **wMatrix = getWeightedMatrix(matrix, col, row);
-    printMat(wMatrix, row, row);
-    freeMemory(wMatrix, row);
-}
-
-
-void printDDG(double** matrix, int col,int row) {
-    double **wMatrix = getWeightedMatrix(matrix, col, row);
-    double **dMatrix = getDiagonalD(matrix, row);
-    printMat(dMatrix, row, row);
-    freeMemory(wMatrix, row);
-    freeMemory(dMatrix, row);
-}
-
-
-void printLNORM(double** matrix, int col, int row) {
-    double **wMatrix = getWeightedMatrix(matrix, col, row);
-    double **dMatrix = getDiagonalD(matrix, row);
-    double **lMatrix = getLaplacianMat(wMatrix, dMatrix, row);
-    printMat(lMatrix, row, row);
-    freeMemory(wMatrix, row);
-    freeMemory(dMatrix, row);
-    freeMemory(lMatrix, row);
-}
-
-void printJACOBI(double** matrix, int col,int row) {}
-
-
-void printMat(double** matrix, int col,int row){
-    int i, j;
-    
-    printf("\nPrinting the 2D Array\n");
-    for(i = 0; i < j; i++)
-    {
-        for(j = 0; j < i; j++)
-        {
-            printf("%.4f|", matrix[i][j]);
-        }
-        printf("\n\n");
-    }
-}
-
-
 /*
  *  free memory function
  */
@@ -514,3 +514,42 @@ void freeMemory(double** matrix ,int len){
     }
     free(matrix);
 }
+
+
+void printWAM(double** matrix, int col,int row) {
+    double **wMatrix = getWeightedMatrix(matrix, col, row);
+    printMat(wMatrix, row, row);
+    freeMemory(wMatrix, row);
+}
+
+void printDDG(double** matrix, int col,int row) {
+    double **wMatrix = getWeightedMatrix(matrix, col, row);
+    double **dMatrix = getDiagonalD(matrix, row);
+    printMat(dMatrix, row, row);
+    freeMemory(wMatrix, row);
+    freeMemory(dMatrix, row);
+}
+
+void printLNORM(double** matrix, int col, int row) {
+    double **wMatrix = getWeightedMatrix(matrix, col, row);
+    double **dMatrix = getDiagonalD(matrix, row);
+    double **lMatrix = getLaplacianMat(wMatrix, dMatrix, row);
+    printMat(lMatrix, row, row);
+    freeMemory(wMatrix, row);
+    freeMemory(dMatrix, row);
+    freeMemory(lMatrix, row);
+}
+
+/*
+ * Outputs must be formatted to 4 decimal places.
+ */
+void printMat(double** matrix, int dim){
+    int i, j;
+    for(i = 0; i < dim; i++){
+        for(j = 0; j < dim; j++){
+            printf("%.4f", matrix[i][j]);
+        }
+        printf("\n");
+    }
+}
+void printJACOBI(double** matrix, int col,int row) {}
