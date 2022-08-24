@@ -9,14 +9,14 @@
 
 /*
  * argc := number of inputs.
- * argv := ["...",k,goal,input_filename].
+ * argv := ["...", k, goal, input_filename].
  * argv[0] is the name of the program.
  */
 int main(int argc, char* argv[]) {
     FILE *input_file;
     int k, i, n, d, j;
     char* goal;
-    GOAL g;
+    Goal g;
     double **inputMatrix;
     int validGoal =0;
 
@@ -26,7 +26,9 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // read the input
+    /*
+     * read the input
+     */ 
     k = atoi(argv[1]);
     if (k < 0){
         printf("Invalid Input!");
@@ -41,21 +43,21 @@ int main(int argc, char* argv[]) {
 
     /*
      * calculating the columns and rows of the input file
-     * check if k==n?
+     * check if d==n?
      */
-    n = calculateRows(input_file);  // columns
-    d = calculateCol(input_file);   // rows
+    n = calculateRows(input_file);  /* columns */
+    d = calculateCol(input_file);   /* rows */
 
     /*
      * build a matrix from input file
      */
     inputMatrix = createMat(n, d);
-    assert(inputMatrix != NULL);
-    fclose(input_file);
+    if (inputMatrix == NULL) {
+        printf("Invalid Input!");
+        return 0;
+    }
+    fillMat(input_file, inputMatrix);
 
-    double **weightedMatrix = getWeightedMatrix(inputMatrix, n, d);
-    double **diagMatrix = getDiagonalD(weightedMatrix, d);
-    double **lapMatrix = getLaplacianMat(weightedMatrix, diagMatrix, d);
 
     if (strcmp(goal, "spk") == 0){
         g = SPK;
@@ -81,9 +83,191 @@ int main(int argc, char* argv[]) {
         printf("Invalid Input!");
         return 0;
     }
-
+    opertaion(inputMatrix, k, n, g);
+    fclose(input_file);
     freeMemory(inputMatrix, n);
     return 0;
+}
+
+
+void operation(double **matrix, int k, int dim, Goal g) {
+    if (g == SPK) {
+        double **clusters = createMat(dim, dim);
+        spkMeans(EPSILON, matrix, clusters);
+    }
+
+    if (g == WAM) {
+        printWAM(matrix, dim);
+    }
+    if (g == DDG) {
+        printDDG(matrix, dim);
+    }
+    if (g == LNORM) {
+        printLNORM(matrix, dim);
+    }
+    if (g == JACOBI) {
+        printJACOBI(matrix, dim);
+    }
+}
+
+
+double** spkMeans(double epsilon, double** inputMat, double** clusters) {
+    int i,j;
+    /*
+     *  groupOfClusters := group of clusters by S1,...,SK, each cluster Sj is represented by it’s
+     *    centroid  which is the mean µj ∈ Rd of the cluster’s members.
+     */
+    double** groupOfClusters = NULL;
+    /*
+     *  groupOfClusters := [[0.0,0.0,0.0,0,0,0.0]
+     *                     ,[0.0,0.0,0.0,0,0,0.0]]
+     */
+    groupOfClusters = createMat(k, n);
+    assert(groupOfClusters != NULL);
+    for(i=0; i<k; i++){
+        for(j=0;j<n;j++){
+            groupOfClusters[i][j] = 0.0;
+        }
+    }
+    algorithm(clusters,inputMat,groupOfClusters, epsilon);
+
+    /*
+     * freeing memory
+     */
+    freeMemory(groupOfClusters, k);
+    return clusters;
+}
+
+void algorithm(double** clusters, double** inputMat, double** GroupOfClusters, double epsilon){
+    int numOfItr=0;
+    int x_i;
+    int m_i;
+    int index;
+    while (numOfItr < MAX_ITER){
+        if(normMat(clusters, epsilon)==1){
+            break;
+        }
+        resetMat(k,n,GroupOfClusters);
+        /*
+         * for xi, 0 < i ≤ N:
+         *  Assign xi to the closest cluster Sj : argmin_Sj(xi − µj )^2 , ∀j 1 ≤ j ≤ K
+         *  0 < index ≤ K
+         */
+        for(x_i=0;x_i<n;x_i++){
+            index = minIndex(clusters, inputMat[x_i]);
+            GroupOfClusters[index][x_i] = 10;
+        }
+        /*
+         * for µk, 0 < i ≤ K:
+         *  we want to change clusters[i] , 0< i <= k
+         */
+        for(m_i=0;m_i<k;m_i++){
+            update(clusters[m_i], GroupOfClusters[m_i], inputMat);
+        }
+        numOfItr++;
+    }
+
+}
+
+
+int normMat(double** matrix, double epsilon){
+    int i;
+    for(i=0;i<k;i++){
+        if(calculateNorm(matrix[i]) > epsilon){
+            return 0;
+        }
+    }
+    return 1;
+}
+
+
+double calculateNorm(double* vector){
+    int i;
+    double sum=0.0;
+    double value;
+    for(i=0;i<d;i++){
+        sum = sum + pow(vector[i],2.0);
+    }
+    value = sqrt(sum);
+    return value;
+}
+
+
+void resetMat(int row,int col,double** mat){
+    int i,j;
+    for(i=0;i<row;i++){
+        for(j=0;j<col;j++){
+            mat[i][j] = 0.0;
+        }
+    }
+}
+
+
+void sumVectors(double* vector1,double* vector2){
+    int i;
+    for(i=0;i<d;i++){
+        vector1[i] = vector1[i] + vector2[i];
+    }
+}
+
+
+void avgVectors(double* vector1,int cnt){
+    int i;
+    if(cnt == 0){
+        return;
+    }
+    for(i=0;i<d;i++){
+        vector1[i] = vector1[i]/cnt;
+    }
+}
+
+
+void update(double* toChage,double* GroupOfClusters,double** inputMat){
+    int i;
+    int cnt=0;
+    /*
+     * fill tochange with 0.0
+     */
+    for(i=0;i<d;i++){
+        toChage[i]= 0.0;
+    }
+    for(i=0;i<n;i++){
+        if(GroupOfClusters[i] > 5){
+            cnt++;
+            sumVectors(toChage,inputMat[i]);
+        }
+    }
+    avgVectors(toChage,cnt);
+}
+
+
+int minIndex(double** clusters, double* victor){
+    int minIndex=0;
+    double minDistance=DBL_MAX;
+    double tempMinDistance;
+    int i;
+
+    for(i=0;i<k;i++){
+        tempMinDistance = distance(victor, clusters[i]);
+        if(tempMinDistance<minDistance) {
+            minIndex = i;
+            minDistance = tempMinDistance;
+        }
+    }
+    return minIndex;
+}
+
+
+double distance(double* vector1 , double* vector2){
+    int i;
+    double sum=0.0;
+    for(i=0; i < d; i++){
+        /*
+         * argmin_Sj(xi − µj)^2
+         */
+        sum = sum + pow((vector1[i] - vector2[i]), 2.0);
+    }
+    return sum;
 }
 
 /*
@@ -203,16 +387,16 @@ double** getLaplacianMatrix(double** matrix, int dim){
     for (i = 0; i < dim; i++) {
         for (j = 0; j < dim; j++) {
             if (i == j) {
-                LnormMatrix[i][j] = 1 - LnormMatrix[i][j];
+                lnormMatrix[i][j] = 1 - lnormMatrix[i][j];
             } else {
-                LnormMatrix[i][j] = ((-1)*(LnormMatrix[i][j]));
+                lnormMatrix[i][j] = ((-1)*(lnormMatrix[i][j]));
             }
         }
     }
     freeMemory(temp, dim);
     freeMemory(wMatrix,dim);
     freeMemory(dMatrix,dim);
-    return LnormMatrix;
+    return lnormMatrix;
 }
 /*
  * check if a matrix is diagonal
@@ -332,8 +516,8 @@ double** jacobiAlgorithm(double** matrix, int dim) {
 
 
     // building a rotation matrix P
-    double **pMatrix = getRotaionMat(matrix, dim);      //TODO: Check if we are in even iteration?
-    double **vMatrix = getRotaionMat(matrix, dim);
+    double **pMatrix = getRotationMat(matrix, dim);      //TODO: Check if we are in even iteration?
+    double **vMatrix = getRotationMat(matrix, dim);
     // building matrix A'
     double **aTagTemp = multiplyMatrices(transpose(pMatrix, dim), matrix, dim);
     double **aTagMat = multiplyMatrices(aTagTemp, pMatrix, dim);
@@ -342,7 +526,7 @@ double** jacobiAlgorithm(double** matrix, int dim) {
 
     // repeat until A' is diagonal matrix
     while ((isDiagonalMatrix(aTagMat, dim) == 0) || (iter < 100 || EPSILON < offset )) {
-        pMatrix = getRotaionMat(aTagMat, dim);
+        pMatrix = getRotationMat(aTagMat, dim);
         vMatrix = multiplyMatrices(vMatrix, pMatrix, dim);
         aTagTemp = multiplyMatrices(transpose(pMatrix, dim), aTagMat, dim);
         aTagMat = multiplyMatrices(aTagTemp, pMatrix, dim);
@@ -516,28 +700,24 @@ void freeMemory(double** matrix ,int len){
 }
 
 
-void printWAM(double** matrix, int col,int row) {
-    double **wMatrix = getWeightedMatrix(matrix, col, row);
-    printMat(wMatrix, row, row);
-    freeMemory(wMatrix, row);
+void printWAM(double** matrix, int dim) {
+    double **wMatrix = getWeightedMatrix(matrix, dim);
+    printMat(wMatrix, dim);
+    freeMemory(wMatrix, dim);
 }
 
-void printDDG(double** matrix, int col,int row) {
-    double **wMatrix = getWeightedMatrix(matrix, col, row);
-    double **dMatrix = getDiagonalD(matrix, row);
-    printMat(dMatrix, row, row);
-    freeMemory(wMatrix, row);
-    freeMemory(dMatrix, row);
+void printDDG(double** matrix, int dim) {
+    double **wMatrix = getWeightedMatrix(matrix, dim);
+    double **dMatrix = getDiagonalD(matrix, dim);
+    printMat(dMatrix, dim);
+    freeMemory(wMatrix, dim);
+    freeMemory(dMatrix, dim);
 }
 
-void printLNORM(double** matrix, int col, int row) {
-    double **wMatrix = getWeightedMatrix(matrix, col, row);
-    double **dMatrix = getDiagonalD(matrix, row);
-    double **lMatrix = getLaplacianMat(wMatrix, dMatrix, row);
-    printMat(lMatrix, row, row);
-    freeMemory(wMatrix, row);
-    freeMemory(dMatrix, row);
-    freeMemory(lMatrix, row);
+void printLNORM(double** matrix, int dim) {
+    double **lMatrix = getLaplacianMatrix(matrix, dim);
+    printMat(lMatrix, dim);
+    freeMemory(lMatrix, dim);
 }
 
 /*
@@ -552,4 +732,4 @@ void printMat(double** matrix, int dim){
         printf("\n");
     }
 }
-void printJACOBI(double** matrix, int col,int row) {}
+void printJACOBI(double** matrix, int dim) {}

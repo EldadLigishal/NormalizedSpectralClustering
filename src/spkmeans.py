@@ -43,7 +43,7 @@ def execute(k, goal,input_filename):
 
 
     if k == 0:
-        k = getEigenGap()
+        k = # getEigengapHeuristic
     
     
 # last editing

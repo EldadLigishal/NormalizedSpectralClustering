@@ -1,6 +1,10 @@
 #ifndef spkmeans_h
 #define spkmeans_h
 
+#define EPSILON pow(10,-5)
+#define LINESIZE 1000
+#define MAX_ITER 100
+
 typedef enum {SPK,WAM, DDG, LNORM, JACOBI
 } Goal;
 
@@ -20,6 +24,9 @@ int main(int argc,char **argv);
  * this func Form the weighted adjacency matrix W ∈ R^(n×n),
  * for the matrix given as input and returns it.
  */
+
+void operation(double **matrix, int k, int dim, Goal g);
+
 double** getWeightedMatrix(double** matrix, int dim);
 /**
  *
@@ -69,6 +76,9 @@ double** getLaplacianMatrix(double** matrix, int dim);
  * the number of columns in the first matrix must be equal
  * to the number of rows in the second matrix.
  */
+
+double** getRotationMat(double **matrix, int dim);
+
 double** multiplyMatrices(double** matrix1, double** matrix2, int dim);
 /**
  *
@@ -76,7 +86,7 @@ double** multiplyMatrices(double** matrix1, double** matrix2, int dim);
  * @return
  * sign(x) = 1 if x>=0, else 0
  */
-int getSign(double number)
+int getSign(double number);
 /**
  * @param matrix
  * @param dim
