@@ -6,25 +6,42 @@
 
 // need to edit the whole file
 
+static void fit(PyObject *self, PyObject *args) {
+    PyObject *matrix;
+    char* goal;
+    int k, n, d;
 
-static PyObject* fit(PyObject *self, PyObject *args){
+    if (!PyArg_ParseTuple(args, "iiiso", &k, &n, &d, &goal, &matrix)) {
+        return NULL;
+    }
+    if (!PyList_Check(matrix)){
+        return NULL;
+    }
+    if(k>n){
+        printf("Invalid Input! \n");
+        return NULL;
+    }
+
+    /* Needs to continue */
+
+}
+
+
+static PyObject* fit_spk(PyObject *self, PyObject *args){
     PyObject *_inputMat;
     PyObject *_clusters;
     PyObject *line;
     PyObject *result;
-    double obj;
-    double **inputMat;
-    double **clusters;
-    double epsilon;
-    int i;
-    int j;
+    double epsilon, obj, **inputMat, **clusters;
+    int i, j;
 
     /* This parses the Python arguments into a int (i) variable named k ,
      *  int (i) variable named max_itr, double (d) variable named epsilon,
      *  int (i) variable named n, double** (O) variable named input_matrix
      *  double** (O) variable named clusters .
+     *  gets k, 100, EPSILON, n, d, matrix, centroids.tolist()
      */
-    if (!PyArg_ParseTuple(args, "iidiiOO", &k, &max_itr, &epsilon, &n, &d, &_inputMat, &_clusters)) {
+    if (!PyArg_ParseTuple(args, "iiiiiO", &k, &max_itr, &epsilon, &n, &d, &_inputMat, &_clusters)) {
         return NULL;
     }
     if (!PyList_Check(_inputMat) || !PyList_Check(_clusters)){

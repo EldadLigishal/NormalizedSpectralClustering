@@ -3,7 +3,7 @@ import math
 import numpy as np
 import pandas as pd
 import sys
-import mykmeanssp as km
+import mySpkmeans as km
 EPSILON = 10**-10   # good epsilon?
 
 
@@ -23,7 +23,13 @@ class Goal(enum):
 # k := the number of clusters required.
 def execute(k, goal,input_filename):
 
-    input_matrix = pd.read_csv(input_filename)
+    #reading input file
+    try:
+        input_matrix = pd.read_csv(input_filename)
+    except:
+        print("An Error Has Occurred")
+        return 0
+
     
     # check if goal is valid
     if not Goal.has_value(goal):
@@ -42,18 +48,22 @@ def execute(k, goal,input_filename):
         return 0
 
 
-    if k == 0:
-        k = # getEigengapHeuristic
+    if (goal == Goal.DDG) or (
+        goal == Goal.WAM) or (
+        goal == Goal.JACOBI) or (
+            goal == Goal.LNORM):
+        km.fit(k, n, d, goal, matrix)
     
-    
-# last editing
-# ---------------------------------------------------------------------------------------------
+    elif goal == Goal.SPK:
+        # centroids Âµ1, Âµ2, ... , ÂµK âˆˆ R^d where 1<K<N.
+        centroids = buildCentroids(k, n, matrix)
+        spk_matrix = km.fit_spk(k, 100, EPSILON, n, d, matrix, centroids.tolist())
+        printMatrix(np.array(spk_matrix))
 
-    # centroids Âµ1, Âµ2, ... , ÂµK âˆˆ R^d where 1<K<N.
-    centroids = buildCentroids(k, n, input_matrix)
+    else:
+        print("Invalid Input!")
+        return 0
 
-    matrix = km.fit(k, 300, EPSILON, n, d, input_array, centroids.tolist())
-    printMatrix(np.array(matrix))
 
 
 def buildCentroids(k, n, input_matrix):
@@ -77,7 +87,7 @@ def buildCentroids(k, n, input_matrix):
         sum_matrix = np.sum(d)
         for j in range(n):
             prob[j] = d[j]/sum_matrix
-       #     prob[j] = step2(d[j], sum_matrix)
+
         rand_i = np.random.choice(n, p=prob)
         centroids_index[i] = rand_i
         centroids[i] = input_matrix[rand_i]
@@ -97,11 +107,6 @@ def step1(i, vector, matrix):
         if min_vector > curr_vector:
             min_vector = curr_vector
     return min_vector
-
-
-def step2(vector, sum_matrix):
-    result = np.divide(vector, sum_matrix)
-    return result
 
 
 def printMatrix(arr):
