@@ -1,5 +1,6 @@
 #include <Python.h>
 #include <stdio.h>
+#include <spkmeans.h>
 #define LINESIZE 1000
 #define PY_SSIZE_T_CLEAN
 
@@ -7,11 +8,12 @@
 // need to edit the whole file
 
 static void fit(PyObject *self, PyObject *args) {
-    PyObject *matrix;
+    PyObject *_matrix;
     char* goal;
+    double **matrix;
     int k, n, d;
 
-    if (!PyArg_ParseTuple(args, "iiiso", &k, &n, &d, &goal, &matrix)) {
+    if (!PyArg_ParseTuple(args, "iiiso", &k, &n, &d, &goal, &_matrix)) {
         return NULL;
     }
     if (!PyList_Check(matrix)){
@@ -22,8 +24,29 @@ static void fit(PyObject *self, PyObject *args) {
         return NULL;
     }
 
+
+    if (strcmp(goal, "wam") == 0){
+        g = WAM;
+        printWAM(matrix, d, n);
+    }
+    if (strcmp(goal, "ddg") == 0){
+        g = DDG;
+        printDDG(matrix, d, n);
+    }
+    if (strcmp(goal, "lnorm") == 0){
+        g = LNORM;
+        printLNORM(matrix, d, n);
+    }
+    if (strcmp(goal, "jacobi") == 0){
+        g = JACOBI;
+        printJacobi(matrix, d, n);
+    }
+    
     /* Needs to continue */
 
+
+
+    freeMemory(matrix,n);
 }
 
 
@@ -32,8 +55,8 @@ static PyObject* fit_spk(PyObject *self, PyObject *args){
     PyObject *_clusters;
     PyObject *line;
     PyObject *result;
-    double epsilon, obj, **inputMat, **clusters;
-    int i, j;
+    double epsilon, obj, **inputMat, **clusters, *array;
+    int i, j, len;
 
     /* This parses the Python arguments into a int (i) variable named k ,
      *  int (i) variable named max_itr, double (d) variable named epsilon,
@@ -50,6 +73,10 @@ static PyObject* fit_spk(PyObject *self, PyObject *args){
     if(k>n){
         printf("Invalid Input! \n");
         return NULL;
+    }
+
+    if (k == 0) {
+        k = getEigengapHeuristic(array, len);
     }
 
     inputMat = createMat(n, d);
@@ -164,3 +191,4 @@ double** calculateCentroids(double epsilon, double** inputMat, double** clusters
     freeMemory(groupOfClusters, k);
     return clusters;
 }
+

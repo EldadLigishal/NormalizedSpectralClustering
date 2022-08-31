@@ -91,7 +91,7 @@ void operation(double **matrix, int dim,int num, Goal g) {
         printLNORM(matrix, dim, num);
     }
     if (g == JACOBI) {
-        printJACOBI(matrix, dim);
+        printJACOBI(matrix, dim, num);
     }
 }
 
@@ -350,6 +350,8 @@ double** multiplyMatrices(double** matrix1, double** matrix2, int dim) {
     }
     return mat;
 }
+
+
 /*
  * calculate the number of col in fileName
  */
@@ -493,7 +495,7 @@ void printMat(double** matrix, int dim){
     }
 }
 
-void printJACOBI(double** matrix, int dim) {
+void printJACOBI(double** matrix, int dim, int k) {
     double* eigenvalues;
     double** V;
     double** result;
@@ -503,7 +505,7 @@ void printJACOBI(double** matrix, int dim) {
         exit(0);
     }
 
-    eigenvalues = (double *) malloc(dim* sizeof (double));
+    eigenvalues = (double *) malloc(k * sizeof (double));
     if(!eigenvalues){
         printf("Invalid Input!");
         exit(0);

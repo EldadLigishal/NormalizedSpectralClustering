@@ -16,11 +16,11 @@ class Goal(enum):
     LNORM = "lnorm"
     JACOBI = "jacobi"
 
+    # check if a value exists in an enum:
+    def has_value(self, value):
+        return (value == self.SPK) or (value == self.WAM) or \
+            (value == self.DDG) or (value == self.LNORM) or (value == self.JACOBI)
 
-# check if a value exists in an enum:
-def has_value(self, value):
-    return (value == self.SPK) or (value == self.WAM) or \
-           (value == self.DDG) or (value == self.LNORM) or (value == self.JACOBI)
 
 
 # k := the number of clusters required.
@@ -33,7 +33,7 @@ def execute(k, goal, input_filename):
         return 0
 
     # check if goal is valid
-    if not has_value(Goal, goal):
+    if not Goal.has_value(Goal, goal):
         print("Invalid Input!")
         return 0
 
