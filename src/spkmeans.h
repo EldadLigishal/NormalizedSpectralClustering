@@ -1,33 +1,75 @@
-#ifndef spkmeans_h
-#define spkmeans_h
+#ifndef SPKMEANS_LIBRARY_H
+#define SPKMEANS_LIBRARY_H
 
+#include <stdbool.h>
 #define EPSILON pow(10,-5)
 #define LINESIZE 1000
 #define MAX_ITER 100
 
-typedef enum {SPK,WAM, DDG, LNORM, JACOBI
+
+
+typedef enum {WAM, DDG, LNORM, JACOBI
 } Goal;
 
 /**
  *
  * @param argc
- * @param argv
+ * @param argv := ["...", goal,filename].
  * @return
  */
-int main(int argc,char **argv);
-
+int main(int argc, char* argv[]);
+/**
+ *
+ * @param matrix
+ * @param dim is the number of column of an input file.
+ * @param num is the number of line of an input file , = number of vectors.
+ * @param g is the enum which include the type if algorithm we have to run.
+ */
+void operation(double **matrix, int dim, int num, Goal g);
+/**
+ *
+ * @param matrix
+ * @param dim is the number of column of an input file.
+ * @param num is the number of line of an input file , = number of vectors.
+ */
+void printWAM(double** matrix, int dim, int num);
+/**
+ *
+ * @param matrix
+ * @param rows
+ * @param cols
+ * Outputs must be formatted to 4 decimal places.
+ */
+void printMat(double** matrix, int rows, int cols);
 /**
  *
  * @param matrix
  * @param dim
- * @return
- * this func Form the weighted adjacency matrix W ∈ R^(n×n),
- * for the matrix given as input and returns it.
+ * @param num
  */
-
-void operation(double **matrix, int k, int dim, Goal g);
-
-double** getWeightedMatrix(double** matrix, int dim);
+void printDDG(double** matrix, int dim, int num);
+/**
+ *
+ * @param matrix
+ * @param dim
+ * @param num
+ */
+void printLNORM(double** matrix, int dim, int num);
+/**
+ *
+ * @param matrix
+ * @param dim
+ * @param num
+ */
+void printJACOBI(double** matrix, int dim, int num);
+/**
+ *
+ * @param matrix
+ * @param dim
+ * @param num
+ * @return
+ */
+double** getWeightedMatrix(double** matrix, int dim, int num);
 /**
  *
  * @param matrix
@@ -41,52 +83,36 @@ double calculateWeight(double** matrix, int index1, int index2, int dim);
 /**
  *
  * @param matrix
- * @param dim
+ * @param num
  * @return
  * this function calculate the value of sum(wiz) and update the Diagonal Degree Matrix d,
  * if the index i=j then dij=sumOf(wiz) for all z=1..n, otherwise dij=0.
  */
-double** getDiagonalMatrix(double** matrix, int dim);
+double** getDiagonalDegreeMatrix(double** matrix,int dim, int num);
 /**
  *
  * @param matrix
  * @param dim
  * @return
- * Form the diagonal degree matrix D ∈ R^(n×n).
- * the diagonal equals to the sum of the i-th row of W.
+ * Form The Normalized Graph Laplacian matrix Lnorm ∈ R^(n×n).
+ * Lnorm = I − (D^(-1/2) * W * D^(-1/2))
+ *       = ( (Diagonal Degree Matrix * Weighted Matrix) * Diagonal Degree Matrix )
  */
-double** getDiagonalDegreeMatrix(double** matrix, int dim);
- /**
-  *
-  * @param matrix
-  * @param dim
-  * @return
-  * Form The Normalized Graph Laplacian matrix Lnorm ∈ R^(n×n).
-  * Lnorm = I − (D^(-1/2) * W * D^(-1/2))
-  *       = ( (Diagonal Degree Matrix * Weighted Matrix) * Diagonal Degree Matrix )
-  */
-double** getLaplacianMatrix(double** matrix, int dim);
+double** getLaplacianMatrix(double** matrix, int dim, int num);
 /**
  *
- * @param matrix1
- * @param matrix2
+ * @param A
+ * @param n
+ * @param eigenvalues
+ * @return
+ */
+double** jacobiAlgorithm(double** A, int n, double* eigenvalues);
+/**
+ *
  * @param dim
  * @return
- * multiplying matrices dimXdim.
- * the number of columns in the first matrix must be equal
- * to the number of rows in the second matrix.
  */
-
-double** getRotationMat(double **matrix, int dim);
-
-double** multiplyMatrices(double** matrix1, double** matrix2, int dim);
-/**
- *
- * @param number
- * @return
- * sign(x) = 1 if x>=0, else 0
- */
-int getSign(double number);
+double** getUnitMatrix(int dim);
 /**
  * @param matrix
  * @param dim
@@ -95,29 +121,50 @@ int getSign(double number);
  */
 double** transpose(double** matrix, int dim);
 /**
+ *
+ * @param A
+ * @param dim
+ * @return
+ */
+double** getRotationMat(double **A, int dim);
+/**
+ *
+ * @param number
+ * @return
+ * sign(x) = 1 if x>=0, else 0
+ */
+int getSign(double number);
+/**
+ *
+ * @param matrix1
+ * @param matrix2
+ * @param dim
+ * @return
+ */
+double** multiplyMatrices(double** matrix1, double** matrix2, int dim);
+/**
  * @param matrix
  * @param dim
  * @return
  * Let off(A)^2 be the sum of squares of all off-diagonal elements of A respectively.
  */
-double offOfMat(double** matrix, int dim);
+double offMatrix(double** matrix, int dim);
 /**
- * @param array
- * @param len
- * @return
- * The Eigengap Heuristic
- * In order to determine the number of clusters k, we will use eigengap heuristic.
- */
-int getEigengapHeuristic(double* array,int len);
-/**
- * @param matrix
+ *
+ * @param matrix1
+ * @param matrix2
  * @param dim
  * @return
- * checks if a matrix is diagonal.
- * diagonal matrix is a square matrix that consists of all zeros off the main diagonal.
  */
-bool isDiagonalMatrix(double** matrix, int dim);
-
+bool convergence(double** matrix1,double** matrix2,int dim);
+/**
+ *
+ * @param V
+ * @param eigenvalues
+ * @param dim
+ * @return
+ */
+double** concatenation(double **V, const double *eigenvalues, int dim);
 /**
  * @param matrix
  * @param len
@@ -150,8 +197,17 @@ int calculateRows(char* fileName);
  * fill 2-dimensional arrays.
  */
 void fillMat(char* fileName,double** inputMat);
+/**
+ * 
+ * @param matrix 
+ * @param dim 
+ * @param num 
+ */
+void printMatJacobi(double** matrix, int dim, int num);
+/*
+ * function to do :)
+ * TODO
+ */
+bool isSymmetric(double** matrix,int dim);
 
-/*****************/
-void printMat(double** matrix, int dim);
-
-#endif
+#endif //SPKMEANS_LIBRARY_H
