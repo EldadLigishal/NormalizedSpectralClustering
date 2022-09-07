@@ -114,19 +114,13 @@ double** jacobiAlgorithm(double** A, int n, double* eigenvalues);
  */
 double** getUnitMatrix(int dim);
 /**
- * @param matrix
- * @param dim
- * @return
- * The transpose of a matrix is found by interchanging its rows into columns.
- */
-double** transpose(double** matrix, int dim);
-/**
  *
  * @param A
+ * @param pMatrix
+ * @param ptMatrix
  * @param dim
- * @return
  */
-double** getRotationMat(double **A, int dim);
+void RotationMat(double** A,double** pMatrix,double** ptMatrix,int dim);
 /**
  *
  * @param number
@@ -198,16 +192,18 @@ int calculateRows(char* fileName);
  */
 void fillMat(char* fileName,double** inputMat);
 /**
- * 
- * @param matrix 
- * @param dim 
- * @param num 
+ *
+ * @param matrix
+ * @param dim
+ * @param num
  */
 void printMatJacobi(double** matrix, int dim, int num);
-/*
- * function to do :)
- * TODO
+/**
+ *
+ * @param row
+ * @param col
+ * @param mat
  */
-bool isSymmetric(double** matrix,int dim);
+void resetMat(int row,int col,double** mat);
 
-#endif //SPKMEANS_LIBRARY_H
+#endif
