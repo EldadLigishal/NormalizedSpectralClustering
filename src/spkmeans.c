@@ -239,25 +239,6 @@ int getSign(double number){
     }
     return -1;
 }
-/*
- * The Eigengap Heuristic
- * In order to determine the number of clusters k, we will use eigengap heuristic.
- */
-int getEigengapHeuristic(double* array,int len){
-    int maxIndex=0;
-    int i;
-    double deltaMax=0;
-    /*
-    * δ_max >= δi (= |λi − λi+1|)
-    */
-    for(i = 0; i < floor(len/2) ; i++){
-        if( fabs(array[i]-array[i+1]) > deltaMax){
-            maxIndex=i;
-            deltaMax=fabs(array[i]-array[i+1]);
-        }
-    }
-    return maxIndex+1;
-}
 
 double** getUnitMatrix(int dim){
     int i, j;
@@ -347,12 +328,10 @@ int calculateCol(char* fileName){
      */
     fgets(line, 1000, ifp);
     token = strtok(line, breaks);
-    while(token != NULL)
-    {
+    while(token != NULL){
         token = strtok(NULL, breaks);
         ++cnt;
     }
-
     /*
      * close file
      */
@@ -465,6 +444,15 @@ void printLNORM(double** matrix, int dim, int num){
  * Outputs must be formatted to 4 decimal places.
  */
 void printMat(double** matrix, int rows, int cols){
+    int i,j;
+    for(i=0;i<rows;i++){
+        for(j=0;j<cols;j++){
+            printf("%.4f",matrix[i][j]);
+            if(j!=cols-1) printf(",");
+        }
+        printf("\n");
+    }
+    /*
     int i, j;
     for(i = 0; i < rows; i++){
         for(j = 0; j < cols-1; j++){
@@ -481,7 +469,7 @@ void printMat(double** matrix, int rows, int cols){
         else{
             printf("%.4f\n", matrix[i][j]);
         }
-    }
+    }*/
 }
 
 void printJACOBI(double** matrix, int dim, int num){
