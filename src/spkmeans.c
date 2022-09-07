@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
         return 0;
     }
     fillMat(filename, inputMatrix);
-
+   
     operation(inputMatrix,d,n,g);
     /*
      *  close file
@@ -510,6 +510,7 @@ double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
     A = matrix;
     V = getUnitMatrix(n);
 
+
     pMatrix = createMat(n,n);
     ptMatrix= createMat(n,n);
 
@@ -525,6 +526,7 @@ double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
          * (a) building a rotation matrix P,PT
          */
         RotationMat(A,pMatrix,ptMatrix,n);
+        
         /*
          * V = P1 * P2 * . . .
          */
@@ -536,6 +538,7 @@ double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
          */
         tmpA = multiplyMatrices(ptMatrix, A, n);
         Aprime = multiplyMatrices(tmpA, pMatrix, n);
+
         freeMemory(tmpA,n);
 
         if(convergence(A, Aprime, n)){
@@ -547,7 +550,7 @@ double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
         A = Aprime;
         itr++;
     }
-
+    
     for (i = 0; i < n; i++) {
         eigenvalues[i] = A[i][i];
     }
@@ -604,15 +607,23 @@ void RotationMat(double** A,double** pMatrix,double** ptMatrix,int dim){
     maxValue = A[0][1];
     maxROW = 0;
     maxCOL = 1;
-    pMatrix = getUnitMatrix(dim);
+    
+    for (i = 0; i < dim; i++){
+        for ( j = 0; j < dim; j++){
+            if (i == j){
+                pMatrix[i][j] = 1.0;
+                ptMatrix[i][j] = 1.0;
+            }
+        }
+    }
 
     /*
      * Pivot :  The Aij is the off-diagonal element with the largest absolute value.
      *          Aij = maxValue , i = maxROW, j = maxCOL.
      */
     for (i = 0; i < dim; i++){
-        for ( j = i+1; j < dim; j++){
-            if (fabs(maxValue) < fabs(A[i][j])){
+        for ( j = 0; j < dim; j++){
+            if (fabs(maxValue) < fabs(A[i][j]) && (i != j)){
                 maxValue = A[i][j];
                 maxROW = i;
                 maxCOL = j;
@@ -623,8 +634,12 @@ void RotationMat(double** A,double** pMatrix,double** ptMatrix,int dim){
     /*
      * Obtain c and t.
      */
-    theta = ((A[maxCOL][maxCOL] - A[maxROW][maxROW])
+    if (A[maxROW][maxCOL] != 0) {
+        theta = ((A[maxCOL][maxCOL] - A[maxROW][maxROW])
              / (2*A[maxROW][maxCOL]));
+    } else {
+        theta = 0.0;
+    }
     sign_theta = getSign(theta);
     t = (sign_theta / (fabs(theta) + sqrt(pow(theta, 2) + 1)));
     c = (1 / sqrt(pow(t, 2) + 1));
