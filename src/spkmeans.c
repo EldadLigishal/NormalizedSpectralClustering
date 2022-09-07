@@ -87,7 +87,9 @@ int main(int argc, char* argv[]){
     /*
      *  freeing memory
      */
-    freeMemory(inputMatrix, n);
+    if(g != JACOBI){
+        freeMemory(inputMatrix, n);
+    }
     return 0;
 }
 
@@ -259,7 +261,7 @@ int getEigengapHeuristic(double* array,int len){
 
 double** getUnitMatrix(int dim){
     int i, j;
-    double **matrix = createMat(dim, dim);
+    double ** matrix = createMat(dim, dim);
     if(!matrix){
         printf("Invalid Input!");
         exit(0);
@@ -281,7 +283,7 @@ double** getUnitMatrix(int dim){
  *  matrix full of zeros
  */
 double** createMat(int col, int row){
-    int i,j;
+    int i;
     double ** matrix = (double**)malloc(col* sizeof(double *));
     assert(matrix != NULL);
     for(i=0; i < col; ++i){
@@ -295,35 +297,13 @@ double** createMat(int col, int row){
     return matrix;
 }
 
-double** transpose(double** matrix, int dim){
-    int i, j;
-    double** tMatrix;
-    tMatrix = createMat(dim, dim);
-    if(!tMatrix){
-        printf("An Error Has Occured");
-        exit(0);
-    }
-    for ( i = 0; i < dim; ++i)
-        for ( j = 0; j < dim; ++j) {
-            tMatrix[j][i] = matrix[i][j];
-        }
-    return tMatrix;
-}
-
-bool isSymmetric(double** matrix,int dim){
-    /*
-     * check if a matrix is symmetric or not
-     */
-    return true;
-}
 void printMatJacobi(double** matrix, int dim, int num){
     int i;
     for(i=0;i<dim;i++){
-        if(matrix[0][i]<0 && matrix[0][i] > - 0.00005){
-            matrix[0][i]=0;
-        }
+        if(matrix[0][i]<0 && matrix[0][i] > - 0.00005){ matrix[0][i]=0 ; }
     }
     printMat(matrix,num+1,dim);
+    freeMemory(matrix,num+1);
 }
 /*
  *  multiplying matrices dimXdim
@@ -392,7 +372,7 @@ int calculateRows(char* fileName){
      * open file
      */
     ifp = fopen(fileName,"r");
-    if(ifp ==NULL) {
+    if(ifp ==NULL){
         printf("Invalid Input! \n");
         return 0;
     }
@@ -436,6 +416,7 @@ void fillMat(char* fileName,double** inputMat){
     }
     fclose(ifp);
 }
+
 /*
  *  free memory function
  */
@@ -462,6 +443,7 @@ void printWAM(double** matrix, int dim, int num){
     printMat(wMatrix, num, num);
     freeMemory(wMatrix, num);
 }
+
 /*
  * Calculate and output the Diagonal Degree Matrix
  */
@@ -478,8 +460,6 @@ void printLNORM(double** matrix, int dim, int num){
     printMat(lMatrix, num, num);
     freeMemory(lMatrix, num);
 }
-
-
 
 /*
  * Outputs must be formatted to 4 decimal places.
@@ -509,10 +489,6 @@ void printJACOBI(double** matrix, int dim, int num){
     double** V;
     double** result;
 
-    if(!isSymmetric(matrix,dim)){
-        printf("Invalid Input!");
-        exit(0);
-    }
     eigenvalues = (double *) malloc(num* sizeof (double));
     if(!eigenvalues){
         printf("Invalid Input!");
@@ -522,10 +498,10 @@ void printJACOBI(double** matrix, int dim, int num){
     V = jacobiAlgorithm(matrix,num,eigenvalues);
     result = concatenation(V,eigenvalues,num);
 
+
     printMatJacobi(result,dim,num);
 
-    freeMemory(result,num);
-    freeMemory(V,dim);
+    freeMemory(V,num);
     free(eigenvalues);
 }
 
@@ -533,17 +509,21 @@ void printJACOBI(double** matrix, int dim, int num){
 /*
  *  Jacobi algorithm
  */
-double** jacobiAlgorithm(double** A, int n, double* eigenvalues){
+double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
     double** pMatrix;
     double** ptMatrix;
     double** V;
-    double** tmpV;
+    double** tmp;
     double** Aprime;
+    double** A;
     double** tmpA;
-    int i;
-    int itr = 0;
+    int i, itr = 0;
 
+    A = matrix;
     V = getUnitMatrix(n);
+
+    pMatrix = createMat(n,n);
+    ptMatrix= createMat(n,n);
 
     /*
      * Repeat (a),(b) : until A' is diagonal matrix
@@ -551,46 +531,53 @@ double** jacobiAlgorithm(double** A, int n, double* eigenvalues){
      *                  until the convergence < pow(10,-5)
      */
     while (itr < MAX_ITER){
+        resetMat(n,n,pMatrix);
+        resetMat(n,n,ptMatrix);
         /*
          * (a) building a rotation matrix P,PT
          */
-        pMatrix = getRotationMat(A, n);
-        ptMatrix = transpose(pMatrix, n);
+        RotationMat(A,pMatrix,ptMatrix,n);
         /*
          * V = P1 * P2 * . . .
          */
-        tmpV = multiplyMatrices(V, pMatrix, n);
+        tmp = multiplyMatrices(V, pMatrix, n);
         freeMemory(V, n);
-        V = tmpV;
+        V = tmp;
         /*
          * (b) Transform the matrix A to: A' = P^T * A * P
          */
-        tmpA = multiplyMatrices(A, pMatrix, n);
-        Aprime = multiplyMatrices(ptMatrix, tmpA, n);
+        tmpA = multiplyMatrices(ptMatrix, A, n);
+        Aprime = multiplyMatrices(tmpA, pMatrix, n);
+        freeMemory(tmpA,n);
+
         if(convergence(A, Aprime, n)){
             freeMemory(A, n);
             A = Aprime;
-            freeMemory(pMatrix, n);
-            freeMemory(ptMatrix, n);
             break;
         }
         freeMemory(A, n);
         A = Aprime;
         itr++;
-
-        freeMemory(tmpA, n);
-        freeMemory(pMatrix, n);
-        freeMemory(ptMatrix, n);
     }
 
     for (i = 0; i < n; i++) {
         eigenvalues[i] = A[i][i];
     }
+    freeMemory(A,n);
+    freeMemory(pMatrix,n);
+    freeMemory(ptMatrix,n);
 
-    freeMemory(tmpA, n);
     return V;
 }
 
+void resetMat(int row,int col,double** mat){
+    int i,j;
+    for(i=0;i<row;i++){
+        for(j=0;j<col;j++){
+            mat[i][j] = 0.0;
+        }
+    }
+}
 /*
  * check if off(A)^2 - off(A')^2 <= EPSILON
  */
@@ -619,8 +606,7 @@ double offMatrix(double** matrix, int dim) {
 /*
  * Rotation Matrix P
  */
-double** getRotationMat(double** A, int dim){
-    double** pMatrix;
+void RotationMat(double** A,double** pMatrix,double** ptMatrix,int dim){
     int i, j, sign_theta;
     double maxValue;
     int maxROW, maxCOL;
@@ -636,15 +622,16 @@ double** getRotationMat(double** A, int dim){
      * Pivot :  The Aij is the off-diagonal element with the largest absolute value.
      *          Aij = maxValue , i = maxROW, j = maxCOL.
      */
-    for (i = 0; i < dim; i++) {
-        for ( j = i+1; j < dim; j++) {
-            if (fabs(maxValue) < fabs(A[i][j])) {
+    for (i = 0; i < dim; i++){
+        for ( j = i+1; j < dim; j++){
+            if (fabs(maxValue) < fabs(A[i][j])){
                 maxValue = A[i][j];
                 maxROW = i;
                 maxCOL = j;
             }
         }
     }
+
     /*
      * Obtain c and t.
      */
@@ -660,7 +647,11 @@ double** getRotationMat(double** A, int dim){
     pMatrix[maxCOL][maxCOL] = c;
     pMatrix[maxCOL][maxROW] = -s;
 
-    return pMatrix;
+    ptMatrix[maxROW][maxROW] = c;
+    ptMatrix[maxROW][maxCOL] = -s;
+    ptMatrix[maxCOL][maxCOL] = c;
+    ptMatrix[maxCOL][maxROW] = s;
+
 }
 
 double** concatenation(double **V, const double* eigenvalues, int dim){
