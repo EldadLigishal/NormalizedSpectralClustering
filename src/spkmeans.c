@@ -452,24 +452,6 @@ void printMat(double** matrix, int rows, int cols){
         }
         printf("\n");
     }
-    /*
-    int i, j;
-    for(i = 0; i < rows; i++){
-        for(j = 0; j < cols-1; j++){
-            if(fabs(matrix[i][j])<0.00005){
-                printf("%.4f,", fabs(matrix[i][j]));
-            }
-            else{
-                printf("%.4f,", matrix[i][j]);
-            }
-        }
-        if(i==rows-1){
-            printf("%.4f", matrix[i][j]);
-        }
-        else{
-            printf("%.4f\n", matrix[i][j]);
-        }
-    }*/
 }
 
 void printJACOBI(double** matrix, int dim, int num){
@@ -670,4 +652,24 @@ double** concatenation(double **V, const double* eigenvalues, int dim){
         }
     }
     return result;
+}
+
+/*
+ * The Eigengap Heuristic
+ * In order to determine the number of clusters k, we will use eigengap heuristic.
+ */
+int getEigengapHeuristic(double* array,int len){
+    int maxIndex=0;
+    int i;
+    double deltaMax=0;
+    /*
+    * δ_max >= δi (= |λi − λi+1|)
+    */
+    for(i = 0; i < floor(len/2) ; i++){
+        if( fabs(array[i]-array[i+1]) > deltaMax){
+            maxIndex=i;
+            deltaMax=fabs(array[i]-array[i+1]);
+        }
+    }
+    return maxIndex+1;
 }

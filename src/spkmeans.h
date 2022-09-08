@@ -206,4 +206,11 @@ void printMatJacobi(double** matrix, int dim, int num);
  */
 void resetMat(int row,int col,double** mat);
 
+/**
+ *
+ * @param array
+ * @param len
+ */
+int getEigengapHeuristic(double* array,int len);
+
 #endif

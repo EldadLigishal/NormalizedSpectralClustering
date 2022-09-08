@@ -1,22 +1,26 @@
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <stdio.h>
 #include <spkmeans.h>
+#include <assert.h>
+#include <string.h>
+#include <stdlib.h>
 #define LINESIZE 1000
-#define PY_SSIZE_T_CLEAN
 
 
 // need to edit the whole file
 
 static void fit(PyObject *self, PyObject *args) {
     PyObject *_matrix;
+    PyObject *line;
     char* goal;
     double **matrix;
-    int k, n, d;
+    int n, d, i, j;
 
-    if (!PyArg_ParseTuple(args, "iiiso", &k, &n, &d, &goal, &_matrix)) {
+    if (!PyArg_ParseTuple(args, "Oiis", &n, &d, &goal, &_matrix)) {
         return NULL;
     }
-    if (!PyList_Check(matrix)){
+    if (!PyList_Check(_matrix)){
         return NULL;
     }
     if(k>n){
@@ -24,28 +28,31 @@ static void fit(PyObject *self, PyObject *args) {
         return NULL;
     }
 
+    matrix = createMat(n, d);
+    assert(inputMat!=NULL);
+
+
+    for (i = 0; i < n; i++){
+        line = PyList_GetItem(_inputMat, i);
+        for(j = 0 ; j < d ; j++){
+            obj = PyFloat_AsDouble(PyList_GetItem(line, j));
+            matrix[i][j] = obj;
+        }
+    }
 
     if (strcmp(goal, "wam") == 0){
-        g = WAM;
         printWAM(matrix, d, n);
     }
     if (strcmp(goal, "ddg") == 0){
-        g = DDG;
         printDDG(matrix, d, n);
     }
     if (strcmp(goal, "lnorm") == 0){
-        g = LNORM;
         printLNORM(matrix, d, n);
     }
     if (strcmp(goal, "jacobi") == 0){
-        g = JACOBI;
         printJacobi(matrix, d, n);
     }
     
-    /* Needs to continue */
-
-
-
     freeMemory(matrix,n);
 }
 
@@ -128,21 +135,23 @@ static PyObject* fit_spk(PyObject *self, PyObject *args){
 
 static PyMethodDef myMethods[] = {
         { "fit",
+        (PyCFunction)fit_spk, METH_VARARGS, PyDoc_STR("Input: Points, Centroids, Iterations and Clusters. Output: Centroids") },
+        {"goal",
         (PyCFunction)fit, METH_VARARGS, PyDoc_STR("Input: Points, Centroids, Iterations and Clusters. Output: Centroids") },
         { NULL, NULL, 0, NULL }
 };
 
-static struct PyModuleDef mykmeanssp = {
+static struct PyModuleDef myspkmeans = {
         PyModuleDef_HEAD_INIT,
-        "mykmeanssp",
-        "kmeans module",
+        "myspkmeans",
+        NULL,
         -1,
         myMethods
 };
 
-PyMODINIT_FUNC PyInit_mykmeanssp(void) {
+PyMODINIT_FUNC PyInit_myspkmeans(void) {
     PyObject *m;
-    m = PyModule_Create(&mykmeanssp);
+    m = PyModule_Create(&myspkmeans);
     if (!m) {
         return NULL;
     }

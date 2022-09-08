@@ -3,7 +3,7 @@ import math
 import numpy as np
 import pandas as pd
 import sys
-import mySpkmeans as km
+import myspkmeans as km
 
 EPSILON = 10 ** -10
 MAXITR = 100
@@ -55,11 +55,11 @@ def execute(k, goal, input_filename):
         Tmatrix = np.array((Tmatrix))
         k = len(Tmatrix[0])
         centroids = buildCentroids(k, n, matrix)
-        spk_matrix = km.fit(k, MAXITR, EPSILON, n, d, Tmatrix, centroids.tolist())
+        spk_matrix = km.goal(k, MAXITR, EPSILON, n, d, Tmatrix, centroids.tolist())
         printMatrix(np.array(spk_matrix))
     else:
         # goal == Goal.DDG or Goal.WAM or Goal.JACOBI or Goal.LNORM
-        km.fit(k, n, d, goal, matrix)
+        km.fit(matrix, d, n, goal)
 
 
 def buildCentroids(k, n, input_matrix):
