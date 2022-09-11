@@ -1,203 +1,313 @@
-#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <stdio.h>
-#include <spkmeans.h>
+#include "spkmeans.h"
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#define LINESIZE 1000
+#include <stdbool.h>
 
-
-// need to edit the whole file
-
-static void fit(PyObject *self, PyObject *args) {
-    PyObject *_matrix;
-    PyObject *line;
+/**
+ *
+ * @param self
+ * @param args
+ */
+static void fitope(PyObject *self, PyObject *args){
+    PyObject* _matrix;
+    int d,n;
     char* goal;
-    double **matrix;
-    int n, d, i, j;
-
-    if (!PyArg_ParseTuple(args, "Oiis", &n, &d, &goal, &_matrix)) {
+    if (!PyArg_ParseTuple(args, "Oiis",&_maxItr, &d, &n, &goal)){
         return NULL;
     }
     if (!PyList_Check(_matrix)){
         return NULL;
     }
-    if(k>n){
-        printf("Invalid Input! \n");
-        return NULL;
-    }
-
+    return Py_BuildValue("O", fitope_help(maxItr, d, n,goal));
+}
+/**
+ * 
+ * @param _matrix 
+ * @param d 
+ * @param n 
+ * @param goal 
+ * @return 
+ */
+static PyObject* fitope_help(PyObject* _matrix, int d, int n,char* goal){
+    PyObject *line;
+    PyObject *result;
+    double** matrix;
+    double obj;
+    int i, j;
+    double** toReturn;
+    double* eigenvalues;
+    double** V;
+    
+    /*
+     * initialize input matrix.
+     * converting Object to double
+     */
     matrix = createMat(n, d);
-    assert(inputMat!=NULL);
-
-
-    for (i = 0; i < n; i++){
-        line = PyList_GetItem(_inputMat, i);
-        for(j = 0 ; j < d ; j++){
+    if (matrix == NULL){
+        printf("An Error Has Occurred\n");
+        exit(0);
+    }
+    for (i = 0; i < n; i++) {
+        line = PyList_GetItem(_matrix, i);
+        for (j = 0; j < d; j++) {
             obj = PyFloat_AsDouble(PyList_GetItem(line, j));
             matrix[i][j] = obj;
         }
     }
 
     if (strcmp(goal, "wam") == 0){
-        printWAM(matrix, d, n);
+        toReturn = getWeightedMatrix(matrix, d, n);
     }
     if (strcmp(goal, "ddg") == 0){
-        printDDG(matrix, d, n);
+        toReturn = getDiagonalDegreeMatrix(matrix, d,n);
     }
     if (strcmp(goal, "lnorm") == 0){
-        printLNORM(matrix, d, n);
+        toReturn = getLaplacianMatrix(matrix, d, n);
     }
     if (strcmp(goal, "jacobi") == 0){
-        printJacobi(matrix, d, n);
+        eigenvalues = (double *) malloc(n* sizeof (double));
+        if(!eigenvalues){
+            printf("Invalid Input!");
+            exit(0);
+        }
+        V = jacobiAlgorithm(matrix,n,eigenvalues);
+        toReturn = concatenation(V,eigenvalues,n);
     }
-    
-    freeMemory(matrix,n);
+    /*
+     * converting toReturn matrix from double to object
+     */
+    if(strcmp(goal, "jacobi") == 0){
+        result = PyList_New(n + 1);
+        if(result == NULL){
+            return NULL;
+        }
+        for(i=0;i<(n + 1);i++){
+            line = PyList_New(n);
+            if(line==NULL){
+                return NULL;
+            }
+            for(j=0;j<n;j++){
+                PyList_SetItem(line,j,PyFloat_FromDouble(toReturn[i][j]));
+            }
+            PyList_SetItem(result, i, line);
+        }
+        freeMemory(toReturn, n + 1);
+    }
+    else{
+        result = PyList_New(n);
+        if(result == NULL){
+            return NULL;
+        }
+        for(i=0;i<n;i++){
+            line = PyList_New(n);
+            if(line==NULL){
+                return NULL;
+            }
+            for(j=0;j<n;j++){
+                PyList_SetItem(line,j,PyFloat_FromDouble(toReturn[i][j]));
+            }
+            PyList_SetItem(result, i, line);
+        }
+        freeMemory(toReturn, n);
+        freeMemory(matrix, n);
+    }
+    return result;
 }
 
-
-static PyObject* fit_spk(PyObject *self, PyObject *args){
-    PyObject *_inputMat;
-    PyObject *_clusters;
+/**
+ *
+ * @param self
+ * @param args
+ * @return
+ * goal = spk
+ */
+static PyObject* fitspk(PyObject *self, PyObject *args) {
+    int k, maxItr,d,n;
+    PyObject *_matrix;
+    PyObject *_centroids;
+    if (!PyArg_ParseTuple(args, "iiiiOO", &k, &maxItr, &n, &d, &_matrix, &_centroids)){
+        return NULL;
+    }
+    if (!PyList_Check(_matrix) || !PyList_Check(_centroids)){
+        return NULL;
+    }
+    return Py_BuildValue("O", fitspk_help(k, maxItr, n, d, _matrix, _centroids));
+}
+/**
+ *
+ * @param k
+ * @param maxItr
+ * @param n
+ * @param d
+ * @param _matrix
+ * @param _centroids
+ * @return
+ */
+static PyObject* fitspk_help(int k , int maxItr, int n, int d, PyObject* _matrix, PyObject* _centroids){
+    PyObject  *result;
     PyObject *line;
-    PyObject *result;
-    double epsilon, obj, **inputMat, **clusters, *array;
-    int i, j, len;
-
-    /* This parses the Python arguments into a int (i) variable named k ,
-     *  int (i) variable named max_itr, double (d) variable named epsilon,
-     *  int (i) variable named n, double** (O) variable named input_matrix
-     *  double** (O) variable named clusters .
-     *  gets k, 100, EPSILON, n, d, matrix, centroids.tolist()
+    int i,j;
+    double **matrix, **centroids;
+    double obj;
+    /*
+     * initialize input matrix.
+     * converting Object to double
      */
-    if (!PyArg_ParseTuple(args, "iiiiiO", &k, &max_itr, &epsilon, &n, &d, &_inputMat, &_clusters)) {
-        return NULL;
+    matrix = createMat(n, d);
+    if(matrix == NULL){
+        printf("An Error Has Occurred\n");
+        exit(1);
     }
-    if (!PyList_Check(_inputMat) || !PyList_Check(_clusters)){
-        return NULL;
-    }
-    if(k>n){
-        printf("Invalid Input! \n");
-        return NULL;
-    }
-
-    if (k == 0) {
-        k = getEigengapHeuristic(array, len);
-    }
-
-    inputMat = createMat(n, d);
-    assert(inputMat!=NULL);
-
-    for (i = 0; i < n; i++){
-        line = PyList_GetItem(_inputMat, i);
-        for(j = 0 ; j < d ; j++){
+    for (i = 0; i < n; i++) {
+        line = PyList_GetItem(_matrix, i);
+        for (j = 0; j < d; j++) {
             obj = PyFloat_AsDouble(PyList_GetItem(line, j));
-            inputMat[i][j] = obj;
+            matrix[i][j] = obj;
         }
     }
-
     /*
      *  initialize centroids µ1, µ2, ... , µK
+     *  converting Object to double
      */
-    clusters = createMat(k,d);
-    assert(clusters != NULL);
-
+    centroids = createMat(k, d);
+    if(centroids == NULL){
+        printf("An Error Has Occurred\n");
+        exit(1);
+    }
     for (i = 0; i < k; i++) {
-        line = PyList_GetItem(_clusters, i);
-        for(j=0 ; j<d ; j++) {
+        line = PyList_GetItem(_centroids, i);
+        for(j = 0 ; j < d ; j++) {
             obj = PyFloat_AsDouble(PyList_GetItem(line, j));
-            clusters[i][j] = obj;
+            centroids[i][j] = obj;
         }
     }
 
-    clusters = calculateCentroids(epsilon, inputMat, clusters);
+    controlPanel(matrix, centroids, d, n, k, maxItr);
 
     result = PyList_New(k);
     if(result == NULL){
         return NULL;
     }
-    for(i = 0 ; i < k; i++){
+    for(i=0;i<k;i++){
         line = PyList_New(d);
         if(line==NULL){
             return NULL;
         }
-        for(j = 0 ; j < d ; j++) {
-            PyList_SetItem(line,j,PyFloat_FromDouble(clusters[i][j]));
+        for(j=0;j<d;j++){
+            PyList_SetItem(line,j,PyFloat_FromDouble(centroids[i][j]));
         }
         PyList_SetItem(result, i, line);
     }
 
-    freeMemory(inputMat,n);
-    freeMemory(clusters,k);
-    return Py_BuildValue("O", result);
+    freeMemory(matrix,n);
+    freeMemory(centroids,k);
+
+    return result;
 }
 
-static PyMethodDef myMethods[] = {
-        { "fit",
-        (PyCFunction)fit_spk, METH_VARARGS, PyDoc_STR("Input: Points, Centroids, Iterations and Clusters. Output: Centroids") },
-        {"goal",
-        (PyCFunction)fit, METH_VARARGS, PyDoc_STR("Input: Points, Centroids, Iterations and Clusters. Output: Centroids") },
-        { NULL, NULL, 0, NULL }
+
+/**
+ *
+ * @param self
+ * @param args
+ * @return
+ */
+static PyObject* fitspkgetT(PyObject *self, PyObject *args) {
+    int k, n, d;
+    PyObject *_matrix;
+    if (!PyArg_ParseTuple(args, "Oiii", &_matrix, &k, &d, &n)){
+        return NULL;
+    }
+    if (!PyList_Check(_matrix)){
+        return NULL;
+    }
+    return Py_BuildValue("O", fitspkgetT_help(_matrix,k,d,n));
+}
+/**
+ *
+ * @param _matrix
+ * @param k
+ * @param d
+ * @param n
+ * @return
+ */
+static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n){
+    PyObject *result;
+    PyObject *line;
+    double** matrix;
+    double** tMatrix;
+    double obj;
+    int i,j;
+
+    /*
+     * initialize input matrix.
+     * converting Object to double
+     */
+    matrix = createMat(n, d);
+    if (matrix == NULL){
+        printf("Invalid Input!");
+        return 0;
+    }
+    for(i=0;i<n;i++){
+        line = PyList_GetItem(_matrix, i);
+        for (j=0;j<d;j++){
+            obj = PyFloat_AsDouble(PyList_GetItem(line, j));
+            matrix[i][j] = obj;
+        }
+    }
+    /*
+     * calling getT function that are in spkmeans.c
+     */
+    tMatrix = getTMatrix(matrix,d,n,k);
+
+    /*
+     * TODO
+     * we have to update the K !!!!!!!!!!!!!!!!!!!!!!!!
+     */
+    result = PyList_New(n);
+    for(i=0;i<n;i++){
+        line = PyList_New(k);
+        for(j=0;j<k;j++)
+        {
+            PyList_SetItem(line,j,PyFloat_FromDouble(tMatrix[i][j]));
+        }
+        PyList_SetItem(result,i,line);
+    }
+
+    freeMemory(matrix,n);
+    freeMemory(tMatrix,n);
+    return result;
+}
+
+
+static PyMethodDef capiMethods[] = {
+        { "fitope",
+          (PyCFunction)fitope,METH_VARARGS,PyDoc_STR("centroids for k clusters")},
+        { "fitspkgetT",
+          (PyCFunction)fitspkgetT,METH_VARARGS,PyDoc_STR("centroids for k clusters")},
+        { "fitspk",
+          (PyCFunction)fitspk,METH_VARARGS,PyDoc_STR("centroids for k clusters")},
+        {NULL,NULL,0,NULL}
 };
 
-static struct PyModuleDef myspkmeans = {
+static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
         "myspkmeans",
         NULL,
         -1,
-        myMethods
+        capiMethods
 };
 
-PyMODINIT_FUNC PyInit_myspkmeans(void) {
+PyMODINIT_FUNC
+PyInit_myspkmeans(void)
+{
     PyObject *m;
-    m = PyModule_Create(&myspkmeans);
-    if (!m) {
+    m=PyModule_Create(&moduledef);
+    if(!m){
         return NULL;
     }
     return m;
 }
-
-
-/*
- *  creates 2-dimensional arrays
- */
-double** createMat(int col, int row){
-    int i;
-    double ** matrix = (double**)malloc(col* sizeof(double *));
-    assert(matrix != NULL);
-    for(i=0; i < col; ++i){
-        matrix[i]= (double*)malloc(row* sizeof(double));
-        assert(matrix[i] != NULL);
-    }
-    return matrix;
-}
-
-
-double** calculateCentroids(double epsilon, double** inputMat, double** clusters){
-    int i,j;
-    /*
-     *  groupOfClusters := group of clusters by S1,...,SK, each cluster Sj is represented by it’s
-     *    centroid  which is the mean µj ∈ Rd of the cluster’s members.
-     */
-    double** groupOfClusters = NULL;
-    /*
-     *  groupOfClusters := [[0.0,0.0,0.0,0,0,0.0]
-     *                     ,[0.0,0.0,0.0,0,0,0.0]]
-     */
-    groupOfClusters = createMat(k, n);
-    assert(groupOfClusters != NULL);
-    for(i=0; i<k; i++){
-        for(j=0;j<n;j++){
-            groupOfClusters[i][j] = 0.0;
-        }
-    }
-    algorithm(clusters,inputMat,groupOfClusters, epsilon);
-
-    /*
-     * freeing memory
-     */
-    freeMemory(groupOfClusters, k);
-    return clusters;
-}
-
