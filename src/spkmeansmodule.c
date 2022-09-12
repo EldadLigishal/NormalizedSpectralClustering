@@ -24,12 +24,12 @@ static void fitope(PyObject *self, PyObject *args){
     return Py_BuildValue("O", fitope_help(maxItr, d, n,goal));
 }
 /**
- * 
- * @param _matrix 
- * @param d 
- * @param n 
- * @param goal 
- * @return 
+ *
+ * @param _matrix
+ * @param d
+ * @param n
+ * @param goal
+ * @return
  */
 static PyObject* fitope_help(PyObject* _matrix, int d, int n,char* goal){
     PyObject *line;
@@ -40,7 +40,7 @@ static PyObject* fitope_help(PyObject* _matrix, int d, int n,char* goal){
     double** toReturn;
     double* eigenvalues;
     double** V;
-    
+
     /*
      * initialize input matrix.
      * converting Object to double
@@ -185,7 +185,7 @@ static PyObject* fitspk_help(int k , int maxItr, int n, int d, PyObject* _matrix
         }
     }
 
-    controlPanel(matrix, centroids, d, n, k, maxItr);
+    controlPanel(k,maxItr,d,n,matrix, centroids);
 
     result = PyList_New(k);
     if(result == NULL){
