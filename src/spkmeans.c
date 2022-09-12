@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
         return 0;
     }
     fillMat(filename, inputMatrix);
-   
+
     operation(inputMatrix,d,n,g);
     /*
      *  close file
@@ -301,7 +301,7 @@ double** multiplyMatrices(double** matrix1, double** matrix2, int dim){
             mat[i][j]=0.0;
             for (l = 0; l < dim; ++l) {
                 mat[i][j] += matrix1[i][l] * matrix2[l][j];
-          }
+            }
         }
     }
     return mat;
@@ -508,7 +508,7 @@ double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
          * (a) building a rotation matrix P,PT
          */
         RotationMat(A,pMatrix,ptMatrix,n);
-        
+
         /*
          * V = P1 * P2 * . . .
          */
@@ -532,7 +532,7 @@ double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
         A = Aprime;
         itr++;
     }
-    
+
     for (i = 0; i < n; i++) {
         eigenvalues[i] = A[i][i];
     }
@@ -589,7 +589,7 @@ void RotationMat(double** A,double** pMatrix,double** ptMatrix,int dim){
     maxValue = A[0][1];
     maxROW = 0;
     maxCOL = 1;
-    
+
     for (i = 0; i < dim; i++){
         for ( j = 0; j < dim; j++){
             if (i == j){
@@ -618,7 +618,7 @@ void RotationMat(double** A,double** pMatrix,double** ptMatrix,int dim){
      */
     if (A[maxROW][maxCOL] != 0) {
         theta = ((A[maxCOL][maxCOL] - A[maxROW][maxROW])
-             / (2*A[maxROW][maxCOL]));
+                 / (2*A[maxROW][maxCOL]));
     } else {
         theta = 0.0;
     }
@@ -654,22 +654,326 @@ double** concatenation(double **V, const double* eigenvalues, int dim){
     return result;
 }
 
+
+
 /*
  * The Eigengap Heuristic
  * In order to determine the number of clusters k, we will use eigengap heuristic.
  */
 int getEigengapHeuristic(double* array,int len){
-    int maxIndex=0;
+    int maxIndex;
     int i;
-    double deltaMax=0;
+    double deltaMax;
+    deltaMax = 0.0;
+    maxIndex = 0;
     /*
-    * δ_max >= δi (= |λi − λi+1|)
-    */
-    for(i = 0; i < floor(len/2) ; i++){
-        if( fabs(array[i]-array[i+1]) > deltaMax){
-            maxIndex=i;
-            deltaMax=fabs(array[i]-array[i+1]);
+     * δ_max >= δi (= |λi − λi+1|)
+     */
+    for (i = 0; i < floor(len / 2); i++){
+        if (fabs(array[i] - array[i + 1]) > deltaMax) {
+            maxIndex = i;
+            deltaMax = fabs(array[i] - array[i + 1]);
         }
     }
     return maxIndex+1;
+}
+
+double** getTMatrix(double** matrix,int dim, int num, int k){
+    int i,j,*index;
+    double sq,sum;
+    double **lMatrix,**vMatrix,**tmp1,**tmp2,**uMatrix,**tMatrix,**result,*eigenvalues;
+    lMatrix=createMat(num, num);
+    vMatrix=createMat(num, num);
+    tmp1=createMat(num, num);
+    tmp2=createMat(num, num);
+    index = (int*) malloc((num) * (sizeof(int)));
+    if(!index){
+        printf("An Error Has Occurred\n");
+        exit(0);
+    }
+    for(i=0;i<num;i++){
+        index[i]=i;
+    }
+    /*
+     * 1: Form the weighted adjacency matrix W from X(X:=matrix)
+     * 2: Compute the normalized graph Laplacian Lnorm(Lnorm:=lMatrix)
+     */
+
+    lMatrix = getLaplacianMatrix(matrix, dim, num);
+    if(!lMatrix){
+        printf("An Error Has Occurred\n");
+        exit(0);
+    }
+    /*
+     * 3: Determine k and obtain the largest k eigenvectors u1,...,uk of Lnorm,
+     * eigenvalues must be ordered decreasingly.
+     * Determining k would be based on the eigengap heuristic or given as an input.
+     */
+
+    eigenvalues = (double*) malloc(sizeof(double)*num);
+    if (!eigenvalues){
+        printf("An Error Has Occurred\n");
+        exit(0);
+    }
+    vMatrix = jacobiAlgorithm(lMatrix,num,eigenvalues);
+    mergeSort(eigenvalues, num, index);
+
+    if(k==0){
+        k = getEigengapHeuristic(eigenvalues,num);
+    }
+    if(k>num){
+        printf("An Error Has Occurred\n");
+        exit(0);
+    }
+    /*
+     * 4: Let U ∈ Rn×k be the matrix containing the vectors u1,...,uk as columns
+     */
+    for(i=0;i<num;i++){
+        for(j=0;j<num;j++){
+            tmp1[i][j]=vMatrix[j][i];
+        }
+    }
+    for(i=0;i<num;i++){
+        for(j=0;j<num;j++){
+            tmp2[i][j]=tmp1[index[i]][j];
+        }
+    }
+
+    uMatrix= createMat(num, k);
+    tMatrix=createMat(num, k);
+
+    for(i=0;i<num;i++) {
+        for(j=0;j<k;j++){
+            uMatrix[i][j]=tmp2[j][i];
+        }
+    }
+    /*
+     * 5: Form the matrix T ∈ Rn×k from U by renormalizing each of U’s rows to have unit length,
+     *     that is set ...
+     */
+    for(i=0;i<num;i++){
+        sum=0.0;
+        for(j=0;j<k;j++){
+            sum+=pow(uMatrix[i][j],2);
+        }
+        sq= sqrt(sum);
+        for(j=0;j<k;j++){
+            if(sq!=0.0){
+                tMatrix[i][j] = (uMatrix[i][j]) / sq;
+            }else{
+                tMatrix[i][j]=(uMatrix[i][j]);
+            }
+        }
+    }
+    /*
+     * to delete
+    result = createMat(k,k);
+    findKmeans(k, 300, num, k, tMatrix, result);
+    printMat(result,k,k);
+     */
+    freeMemory(vMatrix, num);
+    freeMemory(tmp1, num);
+    freeMemory(tmp2, num);
+    freeMemory(uMatrix, num);
+    /*
+    freeMemory(tMatrix, num);
+     */
+    freeMemory(lMatrix,num);
+    free(eigenvalues);
+    free(index);
+    freeMemory(result,k);
+
+    return tMatrix;
+}
+
+void mergeSort(double *arr_double, int len,int* arr_int){
+    double *left_double,*right_double;
+    int *left_int,*right_int;
+    if (len <= 1){
+        return;
+    }
+    left_double = slice_double(arr_double, 0, len / 2 + 1);
+    right_double = slice_double(arr_double, len / 2, len);
+    left_int=slice_int(arr_int,0,len/2 + 1);
+    right_int=slice_int(arr_int,len/2,len);
+    mergeSort(left_double, len / 2,left_int);
+    mergeSort(right_double, len - (len / 2),right_int);
+    merge(arr_double, left_double, right_double, len / 2, len - (len / 2),arr_int,left_int,right_int);
+}
+double* slice_double(double *arr, int start, int end){
+    double *result;
+    int i;
+    result = (double *) malloc((end - start) * sizeof(double));
+    for (i = start; i < end; i++){
+        result[i - start] = arr[i];
+    }
+    return result;
+}
+int* slice_int(int *arr, int start, int end){
+    int *result;
+    int i;
+    result = (int *) malloc((end - start) * sizeof(int));
+    for (i = start; i < end; i++){
+        result[i - start] = arr[i];
+    }
+    return result;
+}
+void merge(double *result, double *left_double, double *right_double, int leftLen, int rightLen,int* ind,int* left_int,int* right_int){
+    int i = 0, j = 0;
+    while(i < leftLen && j < rightLen){
+        if (left_double[i] < right_double[j]){
+            result[i + j] = left_double[i];
+            ind[i + j] = left_int[i];
+            i++;
+        }
+        else{
+            result[i + j] = right_double[j];
+            ind[i + j] = right_int[j];
+            j++;
+        }
+    }
+    for(; i < leftLen; i++){
+        result[i + j] = left_double[i];
+        ind[i + j] = left_int[i];
+    }
+    for(; j < rightLen; j++){
+        result[i + j] = right_double[j];
+        ind[i + j] = right_int[j];
+    }
+    free(left_double);
+    free(right_double);
+    free(left_int);
+    free(right_int);
+}
+
+void controlPanel(int k , int max_iter, int d, int numPoints, double **all_points, double **init_centroids) {
+    int vector_dim, i, j, centroid_index, iteration, all_vectors_num;
+    double **sum_mat, **old_centroids;
+    int *clusters_size;
+    double** centroids;
+    all_vectors_num=numPoints;
+    vector_dim = d;
+    iteration=0;
+    centroids = createMat(k,d);
+    for(i=0;i<k;i++){
+        for (j=0;j<d;j++) {
+            centroids[i][j] = init_centroids[i][j];
+        }
+    }
+    freeMemory(init_centroids,k);
+    sum_mat = (double **) malloc(k * sizeof(double*));
+    if (sum_mat == NULL) {
+        printf("An Error Has Occurred\n");
+        exit(1);
+    }
+    for (i = 0; i < k; i++) {
+        sum_mat[i] = (double *) malloc(vector_dim * sizeof(double));
+        if (sum_mat[i] == NULL) {
+            printf("An Error Has Occurred\n");
+            exit(1);
+        }
+    }
+    /*initializing clusters sizes to zero*/
+    clusters_size = (int *) malloc(k * sizeof(int));
+    if (clusters_size == NULL) {
+        printf("An Error Has Occurred\n");
+        exit(1);
+    }
+    /*memorizing the old centroids in order to calc the norm after updating*/
+    old_centroids = (double **) malloc(k * sizeof(double *));
+    if (old_centroids == NULL) {
+        printf("An Error Has Occurred\n");
+        exit(1);
+    }
+    for (j = 0; j < k; j++) {
+        old_centroids[j] = (double *) malloc(vector_dim * sizeof(double));
+        if(old_centroids[j]==NULL){
+            printf("An Error Has Occurred\n");
+            exit(1);
+        }
+    }
+
+    /*ALGORITHM LOOP*/
+    while (iteration < max_iter) {
+        /* reset cluster sizes and sum matrix */
+        for (i = 0; i < k; i++) {
+            clusters_size[i] = 0;
+            for (j = 0; j < vector_dim; j++) {
+                sum_mat[i][j] = 0;
+            }
+        }
+        /*calculating new sum matrix with the new clusters' sizes */
+        for (j = 0; j < all_vectors_num; j++) {
+            centroid_index = calc_norm(centroids, all_points[j], k,vector_dim);/*calc norm returns index of the current closest centroid to the vector*/
+            clusters_size[centroid_index] += 1;
+            for (i = 0; i < vector_dim; i++) {
+                sum_mat[centroid_index][i] += all_points[j][i];
+            }
+        }
+        /*substituting centroids into old centroids before updating centroids*/
+        for (i = 0; i < k; i++) {
+            for (j = 0; j < vector_dim; j++) {
+                old_centroids[i][j] = centroids[i][j];
+            }
+        }
+        /*calculating the new centroids */
+        for (i = 0; i < k; i++) {
+            free(centroids[i]);
+            centroids[i] = divide(sum_mat[i], clusters_size[i], vector_dim);
+        }
+        iteration += 1;
+    }
+    /* memory releasing */
+    freeMemory(all_points, all_vectors_num);
+    freeMemory(old_centroids, k);
+    freeMemory(sum_mat,k);
+    free(clusters_size);
+
+    /* will free centroids later */
+}
+double* divide(double* vector,int num,int vector_dim){
+    double *result;
+    int i;
+    result = (double*) malloc(vector_dim*sizeof(double ));
+    if(result == NULL){
+        printf("An Error Has Occurred\n");
+        exit(1);
+    }
+    for (i = 0; i < vector_dim; i++) {
+        result[i]=  vector[i]/num;
+    }
+    return result;
+}
+int calc_norm(double** points, double* point, int k, int vector_dim){
+    double closest_norm_value, x;
+    int i, closest_norm;
+    closest_norm =0;
+    closest_norm_value = diff_norm_pow2(points[0], point, vector_dim);
+    for(i=1;i<k;i++){
+        x = diff_norm_pow2(points[i], point, vector_dim);
+        if(x < closest_norm_value){
+            closest_norm=i;
+            closest_norm_value =x;
+        }
+    }
+    return closest_norm;
+}
+double diff_norm_pow2(double* vector1, double* vector2, int vector_dim){
+    double* arr;
+    int i;
+    double sum;
+    arr = (double*) malloc(vector_dim*sizeof (double));
+    if(arr ==NULL){
+        printf("An Error Has Occurred\n");
+        exit(1);
+    }
+    for(i=0;i<vector_dim;i++){
+        arr[i]=vector1[i]-vector2[i];
+    }
+    sum=0;
+    for(i=0;i<vector_dim;i++){
+        sum = sum + arr[i]*arr[i];
+    }
+    free(arr);
+    return sum;
 }
