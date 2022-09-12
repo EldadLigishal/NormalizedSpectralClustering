@@ -206,11 +206,26 @@ void printMatJacobi(double** matrix, int dim, int num);
  */
 void resetMat(int row,int col,double** mat);
 
+
+
+
 /**
  *
  * @param array
  * @param len
  */
 int getEigengapHeuristic(double* array,int len);
+double** getTMatrix(double** matrix,int dim, int num, int k);
+void mergeSort(double *arr_double, int len,int* arr_int);
+double* slice_double(double *arr, int start, int end);
+int* slice_int(int *arr, int start, int end);
+void merge(double *result, double *left_double, double *right_double, int leftLen, int rightLen,int* ind,int* left_int,int* right_int);
+
+
+/* kmeans algorithm in c ,printing in python*/
+double diff_norm_pow2(double* vector1, double* vector2, int vector_dim);
+int calc_norm(double** points, double* point, int k, int vector_dim);
+double* divide(double* vector,int num,int vector_dim);
+void controlPanel(int k , int max_iter, int d, int numPoints, double **all_points, double **init_centroids);
 
 #endif
