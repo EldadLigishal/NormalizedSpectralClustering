@@ -163,11 +163,17 @@ double** getDiagonalDegreeMatrix(double** matrix,int dim, int num){
     double sum;
     double** dMatrix;
     double** wMatrix;
+
     wMatrix = getWeightedMatrix(matrix, dim, num);
     dMatrix = createMat(num, num);
     if(!dMatrix){
         printf("An Error Has Occurred");
         exit(0);
+    }
+    for (i = 0; i < num; i++){
+        for (j = 0; j < num; j++){
+            dMatrix[i][j] = 0;
+        }
     }
     for (i = 0; i < num; i++){
         sum = 0.0;
@@ -435,12 +441,6 @@ void printDDG(double** matrix, int dim, int num){
 
 void printLNORM(double** matrix, int dim, int num){
     double **lMatrix;
-    printf("----------------------------------\n");
-    printf("d = %d", dim);
-    printf(" n = %d", num);
-    printMat(matrix,num,dim);
-    printf("----------------------------------\n");
-
     lMatrix = getLaplacianMatrix(matrix, dim, num);
     printMat(lMatrix, num, num);
     freeMemory(lMatrix, num);

@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-static PyObject* fitope(PyObject *self, PyObject *args);
+static void fitope(PyObject *self, PyObject *args);
 static PyObject* fitspk(PyObject *self, PyObject *args);
-static PyObject* fitope_help(PyObject* _matrix, int d, int n, char* goal);
+static void fitope_help(PyObject* _matrix, int d, int n, char* goal);
 static PyObject* fitspk_help(int k , int maxItr, int n, int d, PyObject* _matrix, PyObject* _centroids);
 static PyObject* fitspkgetT(PyObject *self, PyObject *args);
 static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n);
@@ -20,7 +20,7 @@ static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n);
  * @param self
  * @param args
  */
-static PyObject* fitope(PyObject *self, PyObject *args){
+static void fitope(PyObject *self, PyObject *args){
     PyObject *_matrix;
     int d,n;
     char* goal;
@@ -30,7 +30,7 @@ static PyObject* fitope(PyObject *self, PyObject *args){
     if (!PyList_Check(_matrix)){
         return NULL;
     }
-    return Py_BuildValue("O", fitope_help(_matrix, d, n, goal));
+    fitope_help(_matrix, d, n, goal);
 }
 
 /**
@@ -62,15 +62,17 @@ static PyObject* fitspk(PyObject *self, PyObject *args) {
  * @param goal
  * @return
  */
-static PyObject* fitope_help(PyObject* _matrix, int d, int n, char* goal){
+static void fitope_help(PyObject* _matrix, int d, int n, char* goal){
     PyObject *line;
     PyObject *result;
     double** matrix;
     double obj;
     int i, j;
-    double** toReturn;
     double* eigenvalues;
     double** V;
+    
+    double** toReturn;
+    
 
     /*
      * initialize input matrix.
@@ -90,24 +92,17 @@ static PyObject* fitope_help(PyObject* _matrix, int d, int n, char* goal){
     }
 
     if (strcmp(goal, "wam") == 0){
-        toReturn = getWeightedMatrix(matrix, d, n);
-        printf("********************************\n");
+        printWAM(matrix,d,n);
     }
     if (strcmp(goal, "ddg") == 0){
-        toReturn = getDiagonalDegreeMatrix(matrix, d,n);
+        printDDG(matrix,d,n);
     }
     if (strcmp(goal, "lnorm") == 0){
-        printf("********************************\n");
-        printf("          toReturn:  \n");
-        toReturn = getLaplacianMatrix(matrix, d, n);
-        printMat(toReturn,n,n);
-        printf("********************************\n");
-        printf("d = %d", d);
-        printf(" n = %d", n);
-        printMat(matrix,n,d);
-        printf("********************************\n");
+        printLNORM(matrix,d,n);
     }
     if (strcmp(goal, "jacobi") == 0){
+        printJACOBI(matrix,d,n);
+        /*
         eigenvalues = (double *) malloc(n* sizeof (double));
         if(!eigenvalues){
             printf("Invalid Input!");
@@ -115,10 +110,12 @@ static PyObject* fitope_help(PyObject* _matrix, int d, int n, char* goal){
         }
         V = jacobiAlgorithm(matrix,n,eigenvalues);
         toReturn = concatenation(V,eigenvalues,n);
+        */
     }
     /*
      * converting toReturn matrix from double to object
      */
+    /*
     if(strcmp(goal, "jacobi") == 0){
         result = PyList_New(n + 1);
         if(result == NULL){
@@ -137,6 +134,7 @@ static PyObject* fitope_help(PyObject* _matrix, int d, int n, char* goal){
         freeMemory(toReturn, n + 1);
     }
     else{
+        /*
         result = PyList_New(n);
         if(result == NULL){
             return NULL;
@@ -151,10 +149,11 @@ static PyObject* fitope_help(PyObject* _matrix, int d, int n, char* goal){
             }
             PyList_SetItem(result, i, line);
         }
-        freeMemory(toReturn, n);
+        freeMemory(matrix, n);
+    }*/
+    if(strcmp(goal, "jacobi") != 0){
         freeMemory(matrix, n);
     }
-    return result;
 }
 
 
