@@ -1,4 +1,5 @@
-import enum
+from enum import Enum
+from xml.etree.ElementTree import tostring
 import numpy as np
 import pandas as pd
 import sys
@@ -9,7 +10,7 @@ import myspkmeans as km
 MAXITR = 300
 
 
-class Goal(enum):
+class Goal(Enum):
     SPK = "spk"
     WAM = "wam"
     DDG = "ddg"
@@ -17,9 +18,9 @@ class Goal(enum):
     JACOBI = "jacobi"
 
     # check if a value exists in an enum:
-    def has_value(self, value):
-        return (value == self.SPK) or (value == self.WAM) or \
-               (value == self.DDG) or (value == self.LNORM) or (value == self.JACOBI)
+    def has_value(value):
+        return (value == "spk") or (value == "wam") or \
+               (value == "ddg") or (value == "lnorm") or (value == "jacobi")
 
 
 # k := the number of clusters required.
@@ -32,8 +33,8 @@ def execute(k, goal, input_filename):
         return 0
 
     # check if goal is valid
-    if not Goal.has_value(Goal, goal):
-        print("Invalid Input!")
+    if not Goal.has_value(goal):
+        print("Invalid Input!2")
         return 0
 
     matrix = input_matrix.to_numpy()
@@ -46,7 +47,7 @@ def execute(k, goal, input_filename):
     # Check if the data is correct
     # k must be < the number of datapoints in the file given
     if (k >= n) or (k < 0):
-        print("Invalid Input!")
+        print("Invalid Input!3")
         return 0
 
     if goal == Goal.SPK:
@@ -60,14 +61,14 @@ def execute(k, goal, input_filename):
         spk_matrix = km.fitspk(k, MAXITR, n, k, TmatrixList, centroidsList)
         printMatrix(spk_matrix)
     else:
-        # goal == Goal.DDG or Goal.WAM or Goal.JACOBI or Goal.LNORM
+        # goal == Goal.DDG or Goal.WAM or Goal.JACOBI or Goal.LNORM         
         result = km.fitope(arraylist, d, n, goal)
         if goal == Goal.JACOBI:
             length = len(result[0])
             for i in range(length):
                 if 0 > result[0][i] > -0.00005:
                     result[0][i] = 0
-        printMatrix(result)
+        #printMatrix(result)
 
 
 def buildCentroids(k, n, input_matrix):
@@ -145,4 +146,4 @@ if input_argc == 4:
     # k MUST be passed for all goals.
     execute(int(input_argv[1]), input_argv[2], input_argv[3])
 else:
-    print("Invalid Input!")
+    print("Invalid Input!1")

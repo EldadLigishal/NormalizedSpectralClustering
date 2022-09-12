@@ -1,28 +1,59 @@
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <stdio.h>
 #include "spkmeans.h"
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+
+static PyObject* fitope(PyObject *self, PyObject *args);
+static PyObject* fitspk(PyObject *self, PyObject *args);
+static PyObject* fitope_help(PyObject* _matrix, int d, int n, char* goal);
+static PyObject* fitspk_help(int k , int maxItr, int n, int d, PyObject* _matrix, PyObject* _centroids);
+static PyObject* fitspkgetT(PyObject *self, PyObject *args);
+static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n);
 
 /**
  *
  * @param self
  * @param args
  */
-static void fitope(PyObject *self, PyObject *args){
-    PyObject* _matrix;
+static PyObject* fitope(PyObject *self, PyObject *args){
+    PyObject *_matrix;
     int d,n;
     char* goal;
-    if (!PyArg_ParseTuple(args, "Oiis",&_maxItr, &d, &n, &goal)){
+    if (!PyArg_ParseTuple(args, "Oiis", &_matrix, &d, &n, &goal)){
         return NULL;
     }
     if (!PyList_Check(_matrix)){
         return NULL;
     }
-    return Py_BuildValue("O", fitope_help(maxItr, d, n,goal));
+    return Py_BuildValue("O", fitope_help(_matrix, d, n, goal));
 }
+
+/**
+ *
+ * @param self
+ * @param args
+ * @return
+ * goal = spk
+ */
+static PyObject* fitspk(PyObject *self, PyObject *args) {
+    PyObject *_matrix;
+    PyObject *_centroids;
+    int k, maxItr,d,n;
+    
+    if (!PyArg_ParseTuple(args, "iiiiOO", &k, &maxItr, &n, &d, &_matrix, &_centroids)){
+        return NULL;
+    }
+    if (!PyList_Check(_matrix) || !PyList_Check(_centroids)){
+        return NULL;
+    }
+    return Py_BuildValue("O", fitspk_help(k, maxItr, n, d, _matrix, _centroids));
+}
+
 /**
  *
  * @param _matrix
@@ -31,7 +62,7 @@ static void fitope(PyObject *self, PyObject *args){
  * @param goal
  * @return
  */
-static PyObject* fitope_help(PyObject* _matrix, int d, int n,char* goal){
+static PyObject* fitope_help(PyObject* _matrix, int d, int n, char* goal){
     PyObject *line;
     PyObject *result;
     double** matrix;
@@ -60,12 +91,21 @@ static PyObject* fitope_help(PyObject* _matrix, int d, int n,char* goal){
 
     if (strcmp(goal, "wam") == 0){
         toReturn = getWeightedMatrix(matrix, d, n);
+        printf("********************************\n");
     }
     if (strcmp(goal, "ddg") == 0){
         toReturn = getDiagonalDegreeMatrix(matrix, d,n);
     }
     if (strcmp(goal, "lnorm") == 0){
+        printf("********************************\n");
+        printf("          toReturn:  \n");
         toReturn = getLaplacianMatrix(matrix, d, n);
+        printMat(toReturn,n,n);
+        printf("********************************\n");
+        printf("d = %d", d);
+        printf(" n = %d", n);
+        printMat(matrix,n,d);
+        printf("********************************\n");
     }
     if (strcmp(goal, "jacobi") == 0){
         eigenvalues = (double *) malloc(n* sizeof (double));
@@ -117,25 +157,7 @@ static PyObject* fitope_help(PyObject* _matrix, int d, int n,char* goal){
     return result;
 }
 
-/**
- *
- * @param self
- * @param args
- * @return
- * goal = spk
- */
-static PyObject* fitspk(PyObject *self, PyObject *args) {
-    int k, maxItr,d,n;
-    PyObject *_matrix;
-    PyObject *_centroids;
-    if (!PyArg_ParseTuple(args, "iiiiOO", &k, &maxItr, &n, &d, &_matrix, &_centroids)){
-        return NULL;
-    }
-    if (!PyList_Check(_matrix) || !PyList_Check(_centroids)){
-        return NULL;
-    }
-    return Py_BuildValue("O", fitspk_help(k, maxItr, n, d, _matrix, _centroids));
-}
+
 /**
  *
  * @param k
@@ -216,8 +238,8 @@ static PyObject* fitspk_help(int k , int maxItr, int n, int d, PyObject* _matrix
  * @return
  */
 static PyObject* fitspkgetT(PyObject *self, PyObject *args) {
-    int k, n, d;
     PyObject *_matrix;
+    int k, n, d;
     if (!PyArg_ParseTuple(args, "Oiii", &_matrix, &k, &d, &n)){
         return NULL;
     }

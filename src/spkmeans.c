@@ -435,6 +435,12 @@ void printDDG(double** matrix, int dim, int num){
 
 void printLNORM(double** matrix, int dim, int num){
     double **lMatrix;
+    printf("----------------------------------\n");
+    printf("d = %d", dim);
+    printf(" n = %d", num);
+    printMat(matrix,num,dim);
+    printf("----------------------------------\n");
+
     lMatrix = getLaplacianMatrix(matrix, dim, num);
     printMat(lMatrix, num, num);
     freeMemory(lMatrix, num);
@@ -681,7 +687,7 @@ int getEigengapHeuristic(double* array,int len){
 double** getTMatrix(double** matrix,int dim, int num, int k){
     int i,j,*index;
     double sq,sum;
-    double **lMatrix,**vMatrix,**tmp1,**tmp2,**uMatrix,**tMatrix,**result,*eigenvalues;
+    double **lMatrix,**vMatrix,**tmp1,**tmp2,**uMatrix,**tMatrix,*eigenvalues;
     lMatrix=createMat(num, num);
     vMatrix=createMat(num, num);
     tmp1=createMat(num, num);
@@ -781,7 +787,6 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
     freeMemory(lMatrix,num);
     free(eigenvalues);
     free(index);
-    freeMemory(result,k);
 
     return tMatrix;
 }
