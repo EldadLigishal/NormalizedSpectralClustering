@@ -1,4 +1,5 @@
-from enum import Enum
+from enum import Enum, auto
+from operator import le
 from xml.etree.ElementTree import tostring
 import numpy as np
 import pandas as pd
@@ -34,7 +35,7 @@ def execute(k, goal, input_filename):
 
     # check if goal is valid
     if not Goal.has_value(goal):
-        print("Invalid Input!2")
+        print("Invalid Input!")
         return 0
 
     matrix = input_matrix.to_numpy()
@@ -46,23 +47,24 @@ def execute(k, goal, input_filename):
 
     # Check if the data is correct
     # k must be < the number of datapoints in the file given
-    if (k >= n) or (k < 0):
-        print("Invalid Input!3")
+    if k < 0:
+        print("Invalid Input!")
         return 0
     
-    if goal == "spk":
-        print("start spk")
+    if Goal(goal) is Goal.SPK:
+        
+        if k > n:
+            print("Invalid Input!")
+            return 0
+
         Tmatrix = km.fitspkgetT(arraylist, k, d, n)
-        print("finished spk get T")
         Tmatrix_array = np.array(Tmatrix)
         k = len(Tmatrix_array[0])
         centroids = buildCentroids(k, n, Tmatrix_array)
-        print("finished building centorids")
         centroidsList = centroids.tolist()
         TmatrixList = Tmatrix_array.tolist()
         # d = k
-        spk_matrix = km.fitspk(k, MAXITR, n, k, TmatrixList, centroidsList)
-        print("finished fit spk")
+        spk_matrix = km.fitspk(k, MAXITR, k, TmatrixList, centroidsList)
         printMatrix(spk_matrix)
     else:
         # goal == Goal.DDG or Goal.WAM or Goal.JACOBI or Goal.LNORM         
@@ -102,7 +104,6 @@ def buildCentroids(k, n, input_matrix):
     printIndex(centroids_index)
     return centroids
 
-
 # vector := input_matrix[l]
 # matrix := centroids
 def step1(i, vector, matrix):
@@ -128,7 +129,9 @@ def printMatrix(matrix):
         print(','.join([format(matrix[i][j], ".4f") for j in range(len(matrix[i]))]))
 
 
-# print 1 dimension array
+#**************************
+# print 1 dimension array *
+#**************************
 def printIndex(array):
     print(','.join(map(str, array)))
 
@@ -144,4 +147,4 @@ if input_argc == 4:
     # k MUST be passed for all goals.
     execute(int(input_argv[1]), input_argv[2], input_argv[3])
 else:
-    print("Invalid Input!1")
+    print("Invalid Input!")

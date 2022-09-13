@@ -11,7 +11,7 @@
 static void fitope(PyObject *self, PyObject *args);
 static PyObject* fitspk(PyObject *self, PyObject *args);
 static void fitope_help(PyObject* _matrix, int d, int n, char* goal);
-static PyObject* fitspk_help(int k , int maxItr, int n, int d, PyObject* _matrix, PyObject* _centroids);
+static PyObject* fitspk_help(int k , int maxItr, int d, PyObject* _matrix, PyObject* _centroids);
 static PyObject* fitspkgetT(PyObject *self, PyObject *args);
 static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n);
 
@@ -43,15 +43,15 @@ static void fitope(PyObject *self, PyObject *args){
 static PyObject* fitspk(PyObject *self, PyObject *args) {
     PyObject *_matrix;
     PyObject *_centroids;
-    int k, maxItr,d,n;
+    int k, maxItr,d;
     
-    if (!PyArg_ParseTuple(args, "iiiiOO", &k, &maxItr, &n, &d, &_matrix, &_centroids)){
+    if (!PyArg_ParseTuple(args, "iiiOO", &k, &maxItr, &d, &_matrix, &_centroids)){
         return NULL;
     }
     if (!PyList_Check(_matrix) || !PyList_Check(_centroids)){
         return NULL;
     }
-    return Py_BuildValue("O", fitspk_help(k, maxItr, n, d, _matrix, _centroids));
+    return Py_BuildValue("O", fitspk_help(k, maxItr, d, _matrix, _centroids));
 }
 
 /**
@@ -116,16 +116,17 @@ static void fitope_help(PyObject* _matrix, int d, int n, char* goal){
  * @param _centroids
  * @return
  */
-static PyObject* fitspk_help(int k , int maxItr, int n, int d, PyObject* _matrix, PyObject* _centroids){
+static PyObject* fitspk_help(int k , int maxItr, int d, PyObject* _matrix, PyObject* _centroids){
     PyObject  *result;
     PyObject *line;
-    int i,j;
-    double **matrix, **centroids;
+    int i, j, n;
+    double **matrix, **centroids_temp;
     double obj;
     /*
      * initialize input matrix.
      * converting Object to double
      */
+    n = (int) PyObject_Length(_matrix);
     matrix = createMat(n, d);
     if(matrix == NULL){
         printf("An Error Has Occurred\n");
@@ -142,20 +143,20 @@ static PyObject* fitspk_help(int k , int maxItr, int n, int d, PyObject* _matrix
      *  initialize centroids µ1, µ2, ... , µK
      *  converting Object to double
      */
-    centroids = createMat(k, d);
-    if(centroids == NULL){
+    centroids_temp = createMat(k, d);
+    if(centroids_temp == NULL){
         printf("An Error Has Occurred\n");
         exit(1);
     }
-    for (i = 0; i < k; i++) {
+    for (i = 0; i < d; i++) {
         line = PyList_GetItem(_centroids, i);
-        for(j = 0 ; j < d ; j++) {
+        for(j = 0 ; j < k ; j++) {
             obj = PyFloat_AsDouble(PyList_GetItem(line, j));
-            centroids[i][j] = obj;
+            centroids_temp[i][j] = obj;
         }
     }
 
-    controlPanel(k,maxItr,d,n,matrix, centroids);
+    controlPanel(k,maxItr,d,n,matrix, centroids_temp);
 
     result = PyList_New(k);
     if(result == NULL){
@@ -172,9 +173,7 @@ static PyObject* fitspk_help(int k , int maxItr, int n, int d, PyObject* _matrix
         PyList_SetItem(result, i, line);
     }
 
-    freeMemory(matrix,n);
     freeMemory(centroids,k);
-
     return result;
 }
 
@@ -222,9 +221,9 @@ static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n){
         printf("Invalid Input!");
         return 0;
     }
-    for(i=0;i<d;i++){
+    for(i=0;i<n;i++){
         line = PyList_GetItem(_matrix, i);
-        for (j=0;j<n;j++){
+        for (j=0;j<d;j++){
             obj = PyFloat_AsDouble(PyList_GetItem(line, j));
             matrix[i][j] = obj;
         }
@@ -233,7 +232,6 @@ static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n){
      * calling getT function that are in spkmeans.c
      */
     tMatrix = getTMatrix(matrix,d,n,k);
-    printf("eldad");
     /*
      * TODO
      * we have to update the K !!!!!!!!!!!!!!!!!!!!!!!!

@@ -778,11 +778,8 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
     freeMemory(tmp1, num);
     freeMemory(tmp2, num);
     freeMemory(uMatrix, num);
-    /*freeMemory(lMatrix,num);*/
     free(eigenvalues);
     free(index);
-    printf("yara \n");
-    printMat(tMatrix, num, num);
     return tMatrix;
 }
 
@@ -818,6 +815,8 @@ int* slice_int(int *arr, int start, int end){
     }
     return result;
 }
+
+
 void merge(double *result, double *left_double, double *right_double, int leftLen, int rightLen,int* ind,int* left_int,int* right_int){
     int i = 0, j = 0;
     while(i < leftLen && j < rightLen){
@@ -850,11 +849,22 @@ void controlPanel(int k , int max_iter, int d, int numPoints, double **all_point
     int vector_dim, i, j, centroid_index, iteration, all_vectors_num;
     double **sum_mat, **old_centroids;
     int *clusters_size;
-    double** centroids;
     all_vectors_num=numPoints;
     vector_dim = d;
-    iteration=0;
-    centroids = createMat(k,d);
+    iteration = 0;
+    centroids = (double **) malloc(k*sizeof(double*));
+    printf("contorl panel");
+    if (centroids == NULL){
+        printf("An Error Has Occurred\n");
+        exit(1);
+    }
+    for (i=0;i<k;i++){
+        centroids[i] = (double*) malloc(d*sizeof(double));
+        if(centroids[i] == NULL){
+            printf("An Error Has Occurred\n");
+            exit(1);
+        }
+    }
     for(i=0;i<k;i++){
         for (j=0;j<d;j++) {
             centroids[i][j] = init_centroids[i][j];
@@ -928,9 +938,9 @@ void controlPanel(int k , int max_iter, int d, int numPoints, double **all_point
     freeMemory(old_centroids, k);
     freeMemory(sum_mat,k);
     free(clusters_size);
-
-    /* will free centroids later */
 }
+
+
 double* divide(double* vector,int num,int vector_dim){
     double *result;
     int i;

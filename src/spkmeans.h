@@ -6,8 +6,12 @@
 #define LINESIZE 1000
 #define MAX_ITER 100
 
+double **centroids;
 
 
+/**
+ * Goal enums in C file.
+ */
 typedef enum {WAM, DDG, LNORM, JACOBI
 } Goal;
 
@@ -105,6 +109,7 @@ double** getLaplacianMatrix(double** matrix, int dim, int num);
  * @param n
  * @param eigenvalues
  * @return
+ * Calculate and output the eigenvalues and eigenvectors
  */
 double** jacobiAlgorithm(double** A, int n, double* eigenvalues);
 /**
@@ -148,7 +153,8 @@ double offMatrix(double** matrix, int dim);
  * @param matrix1
  * @param matrix2
  * @param dim
- * @return
+ * @return 
+ * check if off(A)^2 - off(A')^2 <= EPSILON
  */
 bool convergence(double** matrix1,double** matrix2,int dim);
 /**
@@ -170,7 +176,6 @@ void freeMemory(double** matrix ,int len);
  * @param row
  * @return
  * returns a new matrix with dimension col x row
- *
  */
 double** createMat(int col, int row);
 /**
@@ -196,6 +201,7 @@ void fillMat(char* fileName,double** inputMat);
  * @param matrix
  * @param dim
  * @param num
+ * prints Jacobi matrix
  */
 void printMatJacobi(double** matrix, int dim, int num);
 /**
@@ -203,29 +209,44 @@ void printMatJacobi(double** matrix, int dim, int num);
  * @param row
  * @param col
  * @param mat
+ * reset all matrix values to 0
  */
 void resetMat(int row,int col,double** mat);
-
-
 
 
 /**
  *
  * @param array
  * @param len
+ * @return int
+ * In order to determine the number of clusters k,
+ * we will use eigengap heuristic.
  */
 int getEigengapHeuristic(double* array,int len);
+
+/**
+ * @param matrix 
+ * @param dim 
+ * @param num 
+ * @param k 
+ * @return double** 
+ * calculate T matrix for the algorithm
+ */
 double** getTMatrix(double** matrix,int dim, int num, int k);
+
+/**
+ * @param arr_double 
+ * @param len 
+ * @param arr_int 
+ * sorting the eigenvalues in decreasing order.
+ */
 void mergeSort(double *arr_double, int len,int* arr_int);
+void controlPanel(int k , int max_iter, int d, int numPoints, double **all_points, double **init_centroids);
+double* divide(double* vector,int num,int vector_dim);
+double diff_norm_pow2(double* vector1, double* vector2, int vector_dim);
+int calc_norm(double** points, double* point, int k, int vector_dim);
 double* slice_double(double *arr, int start, int end);
 int* slice_int(int *arr, int start, int end);
 void merge(double *result, double *left_double, double *right_double, int leftLen, int rightLen,int* ind,int* left_int,int* right_int);
-
-
-/* kmeans algorithm in c ,printing in python*/
-double diff_norm_pow2(double* vector1, double* vector2, int vector_dim);
-int calc_norm(double** points, double* point, int k, int vector_dim);
-double* divide(double* vector,int num,int vector_dim);
-void controlPanel(int k , int max_iter, int d, int numPoints, double **all_points, double **init_centroids);
 
 #endif
