@@ -62,13 +62,7 @@ def execute(k, goal, input_filename):
         printMatrix(spk_matrix)
     else:
         # goal == Goal.DDG or Goal.WAM or Goal.JACOBI or Goal.LNORM         
-        result = km.fitope(arraylist, d, n, goal)
-        if goal == Goal.JACOBI:
-            length = len(result[0])
-            for i in range(length):
-                if 0 > result[0][i] > -0.00005:
-                    result[0][i] = 0
-        #printMatrix(result)
+        km.fitope(arraylist, d, n, goal)
 
 
 def buildCentroids(k, n, input_matrix):

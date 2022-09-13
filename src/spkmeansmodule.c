@@ -25,10 +25,10 @@ static void fitope(PyObject *self, PyObject *args){
     int d,n;
     char* goal;
     if (!PyArg_ParseTuple(args, "Oiis", &_matrix, &d, &n, &goal)){
-        return NULL;
+        return;
     }
     if (!PyList_Check(_matrix)){
-        return NULL;
+        return;
     }
     fitope_help(_matrix, d, n, goal);
 }
@@ -64,15 +64,9 @@ static PyObject* fitspk(PyObject *self, PyObject *args) {
  */
 static void fitope_help(PyObject* _matrix, int d, int n, char* goal){
     PyObject *line;
-    PyObject *result;
     double** matrix;
     double obj;
-    int i, j;
-    double* eigenvalues;
-    double** V;
-    
-    double** toReturn;
-    
+    int i, j;        
 
     /*
      * initialize input matrix.
@@ -102,55 +96,10 @@ static void fitope_help(PyObject* _matrix, int d, int n, char* goal){
     }
     if (strcmp(goal, "jacobi") == 0){
         printJACOBI(matrix,d,n);
-        /*
-        eigenvalues = (double *) malloc(n* sizeof (double));
-        if(!eigenvalues){
-            printf("Invalid Input!");
-            exit(0);
-        }
-        V = jacobiAlgorithm(matrix,n,eigenvalues);
-        toReturn = concatenation(V,eigenvalues,n);
-        */
     }
     /*
      * converting toReturn matrix from double to object
      */
-    /*
-    if(strcmp(goal, "jacobi") == 0){
-        result = PyList_New(n + 1);
-        if(result == NULL){
-            return NULL;
-        }
-        for(i=0;i<(n + 1);i++){
-            line = PyList_New(n);
-            if(line==NULL){
-                return NULL;
-            }
-            for(j=0;j<n;j++){
-                PyList_SetItem(line,j,PyFloat_FromDouble(toReturn[i][j]));
-            }
-            PyList_SetItem(result, i, line);
-        }
-        freeMemory(toReturn, n + 1);
-    }
-    else{
-        /*
-        result = PyList_New(n);
-        if(result == NULL){
-            return NULL;
-        }
-        for(i=0;i<n;i++){
-            line = PyList_New(n);
-            if(line==NULL){
-                return NULL;
-            }
-            for(j=0;j<n;j++){
-                PyList_SetItem(line,j,PyFloat_FromDouble(toReturn[i][j]));
-            }
-            PyList_SetItem(result, i, line);
-        }
-        freeMemory(matrix, n);
-    }*/
     if(strcmp(goal, "jacobi") != 0){
         freeMemory(matrix, n);
     }

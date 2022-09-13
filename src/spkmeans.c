@@ -170,11 +170,7 @@ double** getDiagonalDegreeMatrix(double** matrix,int dim, int num){
         printf("An Error Has Occurred");
         exit(0);
     }
-    for (i = 0; i < num; i++){
-        for (j = 0; j < num; j++){
-            dMatrix[i][j] = 0;
-        }
-    }
+    
     for (i = 0; i < num; i++){
         sum = 0.0;
         for (j = 0; j < num; j++){
@@ -247,20 +243,14 @@ int getSign(double number){
 }
 
 double** getUnitMatrix(int dim){
-    int i, j;
+    int i;
     double ** matrix = createMat(dim, dim);
     if(!matrix){
         printf("Invalid Input!");
         exit(0);
     }
     for ( i = 0; i < dim; i++) {
-        for ( j = 0; j < dim; j++) {
-            if (i == j) {
-                matrix[i][j] = 1;
-            } else {
-                matrix[i][j] = 0;
-            }
-        }
+        matrix[i][i] = 1;
     }
     return matrix;
 }
@@ -270,7 +260,7 @@ double** getUnitMatrix(int dim){
  *  matrix full of zeros
  */
 double** createMat(int col, int row){
-    int i;
+    int i, j;
     double ** matrix = (double**)malloc(col* sizeof(double *));
     assert(matrix != NULL);
     for(i=0; i < col; ++i){
@@ -280,6 +270,11 @@ double** createMat(int col, int row){
     if(!matrix){
         printf("An Error Has Occurred");
         exit(0);
+    }
+    for (i = 0; i < col; i++){
+        for (j = 0; j < row; j++){
+            matrix[i][j] = 0;
+        }
     }
     return matrix;
 }
@@ -464,11 +459,15 @@ void printJACOBI(double** matrix, int dim, int num){
     double* eigenvalues;
     double** V;
     double** result;
+    int i;
 
     eigenvalues = (double *) malloc(num* sizeof (double));
     if(!eigenvalues){
         printf("Invalid Input!");
         exit(0);
+    }
+    for (i = 0; i < num; i++) {
+        eigenvalues[i] = 0.0;
     }
 
     V = jacobiAlgorithm(matrix,num,eigenvalues);
@@ -497,10 +496,10 @@ double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
 
     A = matrix;
     V = getUnitMatrix(n);
-
-
+  
     pMatrix = createMat(n,n);
     ptMatrix= createMat(n,n);
+
 
     /*
      * Repeat (a),(b) : until A' is diagonal matrix
@@ -510,6 +509,7 @@ double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
     while (itr < MAX_ITER){
         resetMat(n,n,pMatrix);
         resetMat(n,n,ptMatrix);
+        
         /*
          * (a) building a rotation matrix P,PT
          */
@@ -518,9 +518,11 @@ double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
         /*
          * V = P1 * P2 * . . .
          */
+        
         tmp = multiplyMatrices(V, pMatrix, n);
         freeMemory(V, n);
         V = tmp;
+        
         /*
          * (b) Transform the matrix A to: A' = P^T * A * P
          */
@@ -597,12 +599,8 @@ void RotationMat(double** A,double** pMatrix,double** ptMatrix,int dim){
     maxCOL = 1;
 
     for (i = 0; i < dim; i++){
-        for ( j = 0; j < dim; j++){
-            if (i == j){
-                pMatrix[i][j] = 1.0;
-                ptMatrix[i][j] = 1.0;
-            }
-        }
+        pMatrix[i][i] = 1.0;
+        ptMatrix[i][i] = 1.0;
     }
 
     /*
@@ -618,7 +616,7 @@ void RotationMat(double** A,double** pMatrix,double** ptMatrix,int dim){
             }
         }
     }
-
+    
     /*
      * Obtain c and t.
      */
@@ -653,8 +651,9 @@ double** concatenation(double **V, const double* eigenvalues, int dim){
         for(j=0;j<dim;j++){
             if(i==0){
                 result[i][j] = eigenvalues[j];
+            } else {
+                result[i][j] = V[i-1][j];
             }
-            else result[i][j] = V[i-1][j];
         }
     }
     return result;
