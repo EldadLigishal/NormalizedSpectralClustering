@@ -660,7 +660,6 @@ double** concatenation(double **V, const double* eigenvalues, int dim){
 }
 
 
-
 /*
  * The Eigengap Heuristic
  * In order to determine the number of clusters k, we will use eigengap heuristic.
@@ -687,11 +686,9 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
     int i,j,*index;
     double sq,sum;
     double **lMatrix,**vMatrix,**tmp1,**tmp2,**uMatrix,**tMatrix,*eigenvalues;
-    lMatrix=createMat(num, num);
-    vMatrix=createMat(num, num);
     tmp1=createMat(num, num);
     tmp2=createMat(num, num);
-    index = (int*) malloc((num) * (sizeof(int)));
+    index = (int*) malloc(num * (sizeof(int)));
     if(!index){
         printf("An Error Has Occurred\n");
         exit(0);
@@ -705,20 +702,20 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
      */
 
     lMatrix = getLaplacianMatrix(matrix, dim, num);
-    if(!lMatrix){
-        printf("An Error Has Occurred\n");
-        exit(0);
-    }
+    
     /*
      * 3: Determine k and obtain the largest k eigenvectors u1,...,uk of Lnorm,
      * eigenvalues must be ordered decreasingly.
      * Determining k would be based on the eigengap heuristic or given as an input.
      */
 
-    eigenvalues = (double*) malloc(sizeof(double)*num);
+    eigenvalues = (double*) malloc(num * sizeof(double));
     if (!eigenvalues){
         printf("An Error Has Occurred\n");
         exit(0);
+    }
+    for (i =0 ; i < num ; i++) {
+        eigenvalues[i] = 0.0;
     }
     vMatrix = jacobiAlgorithm(lMatrix,num,eigenvalues);
     mergeSort(eigenvalues, num, index);
@@ -733,6 +730,7 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
     /*
      * 4: Let U ∈ Rn×k be the matrix containing the vectors u1,...,uk as columns
      */
+    
     for(i=0;i<num;i++){
         for(j=0;j<num;j++){
             tmp1[i][j]=vMatrix[j][i];
@@ -743,7 +741,7 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
             tmp2[i][j]=tmp1[index[i]][j];
         }
     }
-
+        
     uMatrix= createMat(num, k);
     tMatrix=createMat(num, k);
 
@@ -780,13 +778,11 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
     freeMemory(tmp1, num);
     freeMemory(tmp2, num);
     freeMemory(uMatrix, num);
-    /*
-    freeMemory(tMatrix, num);
-     */
-    freeMemory(lMatrix,num);
+    /*freeMemory(lMatrix,num);*/
     free(eigenvalues);
     free(index);
-
+    printf("yara \n");
+    printMat(tMatrix, num, num);
     return tMatrix;
 }
 

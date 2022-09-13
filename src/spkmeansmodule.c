@@ -188,6 +188,7 @@ static PyObject* fitspk_help(int k , int maxItr, int n, int d, PyObject* _matrix
 static PyObject* fitspkgetT(PyObject *self, PyObject *args) {
     PyObject *_matrix;
     int k, n, d;
+
     if (!PyArg_ParseTuple(args, "Oiii", &_matrix, &k, &d, &n)){
         return NULL;
     }
@@ -221,9 +222,9 @@ static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n){
         printf("Invalid Input!");
         return 0;
     }
-    for(i=0;i<n;i++){
+    for(i=0;i<d;i++){
         line = PyList_GetItem(_matrix, i);
-        for (j=0;j<d;j++){
+        for (j=0;j<n;j++){
             obj = PyFloat_AsDouble(PyList_GetItem(line, j));
             matrix[i][j] = obj;
         }
@@ -232,7 +233,7 @@ static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n){
      * calling getT function that are in spkmeans.c
      */
     tMatrix = getTMatrix(matrix,d,n,k);
-
+    printf("eldad");
     /*
      * TODO
      * we have to update the K !!!!!!!!!!!!!!!!!!!!!!!!

@@ -49,16 +49,20 @@ def execute(k, goal, input_filename):
     if (k >= n) or (k < 0):
         print("Invalid Input!3")
         return 0
-
-    if goal == Goal.SPK:
+    
+    if goal == "spk":
+        print("start spk")
         Tmatrix = km.fitspkgetT(arraylist, k, d, n)
+        print("finished spk get T")
         Tmatrix_array = np.array(Tmatrix)
         k = len(Tmatrix_array[0])
         centroids = buildCentroids(k, n, Tmatrix_array)
+        print("finished building centorids")
         centroidsList = centroids.tolist()
         TmatrixList = Tmatrix_array.tolist()
         # d = k
         spk_matrix = km.fitspk(k, MAXITR, n, k, TmatrixList, centroidsList)
+        print("finished fit spk")
         printMatrix(spk_matrix)
     else:
         # goal == Goal.DDG or Goal.WAM or Goal.JACOBI or Goal.LNORM         
