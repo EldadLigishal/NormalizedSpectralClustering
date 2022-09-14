@@ -68,7 +68,8 @@ def execute(k, goal, input_filename):
         printMatrix(spk_matrix)
     else:
         # goal == Goal.DDG or Goal.WAM or Goal.JACOBI or Goal.LNORM         
-        km.fitope(arraylist, d, n, goal)
+        result = km.fitope(arraylist, d, n, goal)
+        printMatrix(result)
 
 
 def buildCentroids(k, n, input_matrix):
@@ -133,7 +134,11 @@ def printMatrix(matrix):
 # print 1 dimension array *
 #**************************
 def printIndex(array):
-    print(','.join(map(str, array)))
+    for i in range(0, len(array.astype(int))):
+        print(array.astype(int)[i], end="")
+        if i + 1 != len(array.astype(int)):
+            print(",", end="")
+    print()
 
 
 # main

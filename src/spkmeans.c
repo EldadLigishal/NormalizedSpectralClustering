@@ -853,7 +853,6 @@ void controlPanel(int k , int max_iter, int d, int numPoints, double **all_point
     vector_dim = d;
     iteration = 0;
     centroids = (double **) malloc(k*sizeof(double*));
-    printf("contorl panel");
     if (centroids == NULL){
         printf("An Error Has Occurred\n");
         exit(1);

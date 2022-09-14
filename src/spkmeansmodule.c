@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-static void fitope(PyObject *self, PyObject *args);
+static PyObject* fitope(PyObject *self, PyObject *args);
 static PyObject* fitspk(PyObject *self, PyObject *args);
-static void fitope_help(PyObject* _matrix, int d, int n, char* goal);
+static PyObject* fitope_help(PyObject* _matrix, int d, int n, char* goal);
 static PyObject* fitspk_help(int k , int maxItr, int d, PyObject* _matrix, PyObject* _centroids);
 static PyObject* fitspkgetT(PyObject *self, PyObject *args);
 static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n);
@@ -20,17 +20,18 @@ static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n);
  * @param self
  * @param args
  */
-static void fitope(PyObject *self, PyObject *args){
+static PyObject* fitope(PyObject *self, PyObject *args){
     PyObject *_matrix;
     int d,n;
     char* goal;
     if (!PyArg_ParseTuple(args, "Oiis", &_matrix, &d, &n, &goal)){
-        return;
+        return NULL;
     }
     if (!PyList_Check(_matrix)){
-        return;
+        return NULL;
     }
-    fitope_help(_matrix, d, n, goal);
+    return Py_BuildValue("O", fitope_help(_matrix, d, n, goal));
+
 }
 
 /**
@@ -44,7 +45,7 @@ static PyObject* fitspk(PyObject *self, PyObject *args) {
     PyObject *_matrix;
     PyObject *_centroids;
     int k, maxItr,d;
-    
+
     if (!PyArg_ParseTuple(args, "iiiOO", &k, &maxItr, &d, &_matrix, &_centroids)){
         return NULL;
     }
@@ -62,18 +63,24 @@ static PyObject* fitspk(PyObject *self, PyObject *args) {
  * @param goal
  * @return
  */
-static void fitope_help(PyObject* _matrix, int d, int n, char* goal){
+static PyObject* fitope_help(PyObject* _matrix, int d, int n, char* goal) {
     PyObject *line;
-    double** matrix;
+    PyObject *result;
+    double **matrix;
+    double **wMatrix;
+    double ** toRetern;
     double obj;
-    int i, j;        
+    int i, j;
+    double* eigenvalues;
+    double** V;
 
+    toRetern = NULL;
     /*
      * initialize input matrix.
      * converting Object to double
      */
     matrix = createMat(n, d);
-    if (matrix == NULL){
+    if (matrix == NULL) {
         printf("An Error Has Occurred\n");
         exit(0);
     }
@@ -85,26 +92,74 @@ static void fitope_help(PyObject* _matrix, int d, int n, char* goal){
         }
     }
 
-    if (strcmp(goal, "wam") == 0){
-        printWAM(matrix,d,n);
+    if (strcmp(goal, "wam") == 0) {
+        toRetern = getWeightedMatrix(matrix, d, n);
+        freeMemory(matrix, n);
     }
-    if (strcmp(goal, "ddg") == 0){
-        printDDG(matrix,d,n);
+    if (strcmp(goal, "ddg") == 0) {
+        toRetern = getDiagonalDegreeMatrix(matrix, d,n);
+        freeMemory(matrix, n);
     }
     if (strcmp(goal, "lnorm") == 0){
-        printLNORM(matrix,d,n);
+        toRetern = getLaplacianMatrix(matrix, d, n);
+        freeMemory(matrix, n);
     }
     if (strcmp(goal, "jacobi") == 0){
-        printJACOBI(matrix,d,n);
+        eigenvalues = (double *) malloc(n* sizeof (double));
+        if(!eigenvalues){
+            printf("Invalid Input!");
+            exit(0);
+        }
+        for (i = 0; i < n; i++) {
+            eigenvalues[i] = 0.0;
+        }
+
+        V = jacobiAlgorithm(matrix,n,eigenvalues);
+        toRetern = concatenation(V,eigenvalues,n);
+
+        freeMemory(V,n);
+        free(eigenvalues);
     }
+
     /*
      * converting toReturn matrix from double to object
      */
-    if(strcmp(goal, "jacobi") != 0){
-        freeMemory(matrix, n);
+    if(strcmp(goal, "jacobi") == 0){
+        result = PyList_New(n + 1);
+        if(result == NULL){
+            return NULL;
+        }
+        for(i=0;i<(n + 1);i++){
+            line = PyList_New(n);
+            if(line==NULL){
+                return NULL;
+            }
+            for(j=0;j<n;j++){
+                PyList_SetItem(line,j,PyFloat_FromDouble(toRetern[i][j]));
+            }
+            PyList_SetItem(result, i, line);
+        }
+        freeMemory(toRetern, n + 1);
     }
+    else{
+        result = PyList_New(n);
+        if(result == NULL){
+            return NULL;
+        }
+        for(i=0;i<n;i++){
+            line = PyList_New(n);
+            if(line==NULL){
+                return NULL;
+            }
+            for(j=0;j<n;j++){
+                PyList_SetItem(line,j,PyFloat_FromDouble(toRetern[i][j]));
+            }
+            PyList_SetItem(result, i, line);
+        }
+        freeMemory(toRetern, n);
+    }
+    return result;
 }
-
 
 /**
  *
@@ -254,11 +309,11 @@ static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n){
 
 static PyMethodDef capiMethods[] = {
         { "fitope",
-          (PyCFunction)fitope,METH_VARARGS,PyDoc_STR("centroids for k clusters")},
+                (PyCFunction)fitope,METH_VARARGS,PyDoc_STR("centroids for k clusters")},
         { "fitspkgetT",
-          (PyCFunction)fitspkgetT,METH_VARARGS,PyDoc_STR("centroids for k clusters")},
+                (PyCFunction)fitspkgetT,METH_VARARGS,PyDoc_STR("centroids for k clusters")},
         { "fitspk",
-          (PyCFunction)fitspk,METH_VARARGS,PyDoc_STR("centroids for k clusters")},
+                (PyCFunction)fitspk,METH_VARARGS,PyDoc_STR("centroids for k clusters")},
         {NULL,NULL,0,NULL}
 };
 
