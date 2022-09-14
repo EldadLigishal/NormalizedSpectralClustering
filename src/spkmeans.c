@@ -717,8 +717,9 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
     for (i =0 ; i < num ; i++) {
         eigenvalues[i] = 0.0;
     }
+    
     vMatrix = jacobiAlgorithm(lMatrix,num,eigenvalues);
-    mergeSort(eigenvalues, num, index);
+    sortingEigenValues(eigenvalues, num, index);
 
     if(k==0){
         k = getEigengapHeuristic(eigenvalues,num);
@@ -768,12 +769,7 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
             }
         }
     }
-    /*
-     * to delete
-    result = createMat(k,k);
-    findKmeans(k, 300, num, k, tMatrix, result);
-    printMat(result,k,k);
-     */
+    
     freeMemory(vMatrix, num);
     freeMemory(tmp1, num);
     freeMemory(tmp2, num);
@@ -781,6 +777,25 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
     free(eigenvalues);
     free(index);
     return tMatrix;
+}
+
+void sortingEigenValues(double *arr_double, int len,int* arr_int) {
+    int i, j, temp_int;
+    double temp_double;
+    for (i = 0; i < len; i++) {
+        for (j = i + 1; j < len; j++) {
+            if (arr_double[i] < arr_double[j]) {
+                temp_double = arr_double[i];
+                temp_int = arr_int[i];
+
+                arr_double[i] = arr_double[j];
+                arr_int[i] = arr_int[j];
+
+                arr_double[j] = temp_double;
+                arr_int[j] = temp_int;
+            }
+        }
+    }
 }
 
 void mergeSort(double *arr_double, int len,int* arr_int){
@@ -797,6 +812,7 @@ void mergeSort(double *arr_double, int len,int* arr_int){
     mergeSort(right_double, len - (len / 2),right_int);
     merge(arr_double, left_double, right_double, len / 2, len - (len / 2),arr_int,left_int,right_int);
 }
+
 double* slice_double(double *arr, int start, int end){
     double *result;
     int i;
@@ -806,6 +822,7 @@ double* slice_double(double *arr, int start, int end){
     }
     return result;
 }
+
 int* slice_int(int *arr, int start, int end){
     int *result;
     int i;

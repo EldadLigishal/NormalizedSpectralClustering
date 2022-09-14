@@ -241,6 +241,7 @@ double** getTMatrix(double** matrix,int dim, int num, int k);
  * sorting the eigenvalues in decreasing order.
  */
 void mergeSort(double *arr_double, int len,int* arr_int);
+void sortingEigenValues(double *arr_double, int len,int* arr_int);
 void controlPanel(int k , int max_iter, int d, int numPoints, double **all_points, double **init_centroids);
 double* divide(double* vector,int num,int vector_dim);
 double diff_norm_pow2(double* vector1, double* vector2, int vector_dim);
