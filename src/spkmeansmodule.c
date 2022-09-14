@@ -67,7 +67,6 @@ static PyObject* fitope_help(PyObject* _matrix, int d, int n, char* goal) {
     PyObject *line;
     PyObject *result;
     double **matrix;
-    double **wMatrix;
     double ** toRetern;
     double obj;
     int i, j;
@@ -287,6 +286,7 @@ static PyObject* fitspkgetT_help(PyObject* _matrix, int k, int d, int n){
      * calling getT function that are in spkmeans.c
      */
     tMatrix = getTMatrix(matrix,d,n,k);
+    k = K;
     /*
      * TODO
      * we have to update the K !!!!!!!!!!!!!!!!!!!!!!!!

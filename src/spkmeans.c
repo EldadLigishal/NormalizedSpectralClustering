@@ -608,7 +608,7 @@ void RotationMat(double** A,double** pMatrix,double** ptMatrix,int dim){
      *          Aij = maxValue , i = maxROW, j = maxCOL.
      */
     for (i = 0; i < dim; i++){
-        for ( j = 0; j < dim; j++){
+        for ( j = i + 1; j < dim; j++){
             if (fabs(maxValue) < fabs(A[i][j]) && (i != j)){
                 maxValue = A[i][j];
                 maxROW = i;
@@ -668,7 +668,7 @@ int getEigengapHeuristic(double* array,int len){
     int maxIndex;
     int i;
     double deltaMax;
-    deltaMax = 0.0;
+    deltaMax = fabs(array[0] - array[1]);
     maxIndex = 0;
     /*
      * δ_max >= δi (= |λi − λi+1|)
@@ -722,7 +722,10 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
     sortingEigenValues(eigenvalues, num, index);
 
     if(k==0){
-        k = getEigengapHeuristic(eigenvalues,num);
+        K = getEigengapHeuristic(eigenvalues,num);
+        k = K;
+    } else {
+        K = k;
     }
     if(k>num){
         printf("An Error Has Occurred\n");
@@ -798,69 +801,6 @@ void sortingEigenValues(double *arr_double, int len,int* arr_int) {
     }
 }
 
-void mergeSort(double *arr_double, int len,int* arr_int){
-    double *left_double,*right_double;
-    int *left_int,*right_int;
-    if (len <= 1){
-        return;
-    }
-    left_double = slice_double(arr_double, 0, len / 2 + 1);
-    right_double = slice_double(arr_double, len / 2, len);
-    left_int=slice_int(arr_int,0,len/2 + 1);
-    right_int=slice_int(arr_int,len/2,len);
-    mergeSort(left_double, len / 2,left_int);
-    mergeSort(right_double, len - (len / 2),right_int);
-    merge(arr_double, left_double, right_double, len / 2, len - (len / 2),arr_int,left_int,right_int);
-}
-
-double* slice_double(double *arr, int start, int end){
-    double *result;
-    int i;
-    result = (double *) malloc((end - start) * sizeof(double));
-    for (i = start; i < end; i++){
-        result[i - start] = arr[i];
-    }
-    return result;
-}
-
-int* slice_int(int *arr, int start, int end){
-    int *result;
-    int i;
-    result = (int *) malloc((end - start) * sizeof(int));
-    for (i = start; i < end; i++){
-        result[i - start] = arr[i];
-    }
-    return result;
-}
-
-
-void merge(double *result, double *left_double, double *right_double, int leftLen, int rightLen,int* ind,int* left_int,int* right_int){
-    int i = 0, j = 0;
-    while(i < leftLen && j < rightLen){
-        if (left_double[i] < right_double[j]){
-            result[i + j] = left_double[i];
-            ind[i + j] = left_int[i];
-            i++;
-        }
-        else{
-            result[i + j] = right_double[j];
-            ind[i + j] = right_int[j];
-            j++;
-        }
-    }
-    for(; i < leftLen; i++){
-        result[i + j] = left_double[i];
-        ind[i + j] = left_int[i];
-    }
-    for(; j < rightLen; j++){
-        result[i + j] = right_double[j];
-        ind[i + j] = right_int[j];
-    }
-    free(left_double);
-    free(right_double);
-    free(left_int);
-    free(right_int);
-}
 
 void controlPanel(int k , int max_iter, int d, int numPoints, double **all_points, double **init_centroids) {
     int vector_dim, i, j, centroid_index, iteration, all_vectors_num;

@@ -7,6 +7,7 @@
 #define MAX_ITER 100
 
 double **centroids;
+int K;
 
 
 /**
@@ -240,14 +241,10 @@ double** getTMatrix(double** matrix,int dim, int num, int k);
  * @param arr_int 
  * sorting the eigenvalues in decreasing order.
  */
-void mergeSort(double *arr_double, int len,int* arr_int);
 void sortingEigenValues(double *arr_double, int len,int* arr_int);
 void controlPanel(int k , int max_iter, int d, int numPoints, double **all_points, double **init_centroids);
 double* divide(double* vector,int num,int vector_dim);
 double diff_norm_pow2(double* vector1, double* vector2, int vector_dim);
 int calc_norm(double** points, double* point, int k, int vector_dim);
-double* slice_double(double *arr, int start, int end);
-int* slice_int(int *arr, int start, int end);
-void merge(double *result, double *left_double, double *right_double, int leftLen, int rightLen,int* ind,int* left_int,int* right_int);
 
 #endif
