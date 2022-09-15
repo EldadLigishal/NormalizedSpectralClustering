@@ -2,7 +2,7 @@
 #define SPKMEANS_LIBRARY_H
 
 #include <stdbool.h>
-#define EPSILON pow(10,-5)
+#define EPSILON 0.00001
 #define LINESIZE 1000
 #define MAX_ITER 100
 

@@ -210,7 +210,7 @@ static PyObject* fitspk_help(int k , int maxItr, int d, PyObject* _matrix, PyObj
         }
     }
 
-    controlPanel(k,maxItr,d,n,matrix, centroids_temp);
+    kmeans(k,maxItr,d,n,matrix, centroids_temp);
 
     result = PyList_New(k);
     if(result == NULL){

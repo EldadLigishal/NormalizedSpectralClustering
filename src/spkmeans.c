@@ -247,7 +247,7 @@ double** createMat(int col, int row){
 void printMatJacobi(double** matrix, int dim, int num){
     int i;
     for(i=0;i<dim;i++){
-        if(matrix[0][i]<0 && matrix[0][i] > - 0.00005){ matrix[0][i]=0 ; }
+        if(matrix[0][i]<0 && matrix[0][i] > - 0.00001){ matrix[0][i]=0 ; }
     }
     printMat(matrix,num+1,dim);
     freeMemory(matrix,num+1);
@@ -751,7 +751,7 @@ void kmeans(int k , int maxItr, int d, int num, double **inputMatrix, double **i
         exit(1);
     }
     old_centroids = createMat(k,vector_dim);
-    if (!old_centroids == NULL) {
+    if (!old_centroids) {
         printf("An Error Has Occurred\n");
         exit(1);
     }
