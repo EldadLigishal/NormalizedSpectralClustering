@@ -19,12 +19,8 @@ int main(int argc, char* argv[]){
     int n, d;
     char* goal;
     Goal g;
-    /*
-     * input_filename := *.txt file that contains data-points separated by commas.
-     */
     double **inputMatrix;
     int validGoal = 0;
-
     if (argc != 3){
         printf("Invalid Input!");
         return 0;
@@ -38,7 +34,6 @@ int main(int argc, char* argv[]){
         printf("Invalid Input! \n");
         return 0;
     }
-
     goal = argv[1];
     if (strcmp(goal, "wam") == 0){
         g = WAM;
@@ -67,7 +62,6 @@ int main(int argc, char* argv[]){
      */
     n = calculateRows(filename);
     d = calculateCol(filename);
-
     /*
      *  build a matrix from input file.
      *  We start by creating an empty matrix, and then we will fill it.
@@ -78,15 +72,11 @@ int main(int argc, char* argv[]){
         return 0;
     }
     fillMat(filename, inputMatrix);
-
     operation(inputMatrix,d,n,g);
     /*
-     *  close file
+     *  close file and freeing memory
      */
     fclose(ifp);
-    /*
-     *  freeing memory
-     */
     if(g != JACOBI){
         freeMemory(inputMatrix, n);
     }
@@ -107,9 +97,7 @@ void operation(double **matrix, int dim,int num, Goal g){
         printJACOBI(matrix, dim, num);
     }
 }
-/*
- * calculate the value of exp(−||xi − xj||/2)
- */
+
 double calculateWeight(double** matrix, int index1, int index2, int dim){
     int i;
     double value = 0.0;
@@ -122,12 +110,6 @@ double calculateWeight(double** matrix, int index1, int index2, int dim){
     return value;
 }
 
-/*
- * Form the weighted adjacency matrix W ∈ R^(n×n).
- * The weights are symmetric (wij = wji) and non-negative (wij ≥ 0).
- * wii = 0 for all i’s
- * the rest of the values are set to: wij = exp(−||xi − xj||/2)
- */
 double** getWeightedMatrix(double** matrix, int dim, int num){
     int i, j;
     double** wMatrix;
@@ -153,11 +135,6 @@ double** getWeightedMatrix(double** matrix, int dim, int num){
     return wMatrix;
 }
 
-/*
- * Form the diagonal degree matrix D ∈ R^(n×n).
- * the diagonal equals to the sum of the i-th row of W.
- * if i=j dij = sumOf(wiz) for all z=1..n, otherwise dij=0
- */
 double** getDiagonalDegreeMatrix(double** matrix,int dim, int num){
     int i, j;
     double sum;
@@ -170,7 +147,7 @@ double** getDiagonalDegreeMatrix(double** matrix,int dim, int num){
         printf("An Error Has Occurred");
         exit(0);
     }
-    
+
     for (i = 0; i < num; i++){
         sum = 0.0;
         for (j = 0; j < num; j++){
@@ -183,11 +160,6 @@ double** getDiagonalDegreeMatrix(double** matrix,int dim, int num){
 }
 
 
-/*
- * Form The Normalized Graph Laplacian matrix Lnorm ∈ R^(n×n).
- * Lnorm = I − (D^(-1/2) * W * D^(-1/2))
- *       = ( (Diagonal Degree Matrix * Weighted Matrix) * Diagonal Degree Matrix )
- */
 double** getLaplacianMatrix(double** matrix, int dim, int num){
     int i, j;
     double** wMatrix;
@@ -232,9 +204,6 @@ double** getLaplacianMatrix(double** matrix, int dim, int num){
     return lnormMatrix;
 }
 
-/*
- * sign(x) = 1 if x >= 0, else 0
- */
 int getSign(double number){
     if (number >= 0) {
         return 1;
@@ -254,11 +223,7 @@ double** getUnitMatrix(int dim){
     }
     return matrix;
 }
-/*
- *  creates 2-dimensional arrays
- *  NEEDS TO CHANGE TO CALLOC
- *  matrix full of zeros
- */
+
 double** createMat(int col, int row){
     int i, j;
     double ** matrix = (double**)malloc(col* sizeof(double *));
@@ -287,11 +252,7 @@ void printMatJacobi(double** matrix, int dim, int num){
     printMat(matrix,num+1,dim);
     freeMemory(matrix,num+1);
 }
-/*
- *  multiplying matrices dimXdim
- *  the number of columns in the first matrix must be equal
- *  to the number of rows in the second matrix.
- */
+
 double** multiplyMatrices(double** matrix1, double** matrix2, int dim){
     int j, i, l;
     double** mat = NULL;
@@ -307,9 +268,7 @@ double** multiplyMatrices(double** matrix1, double** matrix2, int dim){
     }
     return mat;
 }
-/*
- * calculate the number of col in fileName
- */
+
 int calculateCol(char* fileName){
     int cnt = 0;
     FILE* ifp;
@@ -340,14 +299,11 @@ int calculateCol(char* fileName){
     return cnt;
 
 }
-/*
- * calculate the number of rows in fileName
- */
+
 int calculateRows(char* fileName){
     int cnt = 0;
     char line[LINESIZE];
     FILE* ifp;
-
     /*
      * open file
      */
@@ -368,9 +324,7 @@ int calculateRows(char* fileName){
     fclose(ifp);
     return cnt ;
 }
-/*
- * fill 2-dimensional arrays
- */
+
 void fillMat(char* fileName,double** inputMat){
     FILE* ifp;
     char* token;
@@ -378,7 +332,6 @@ void fillMat(char* fileName,double** inputMat){
     char line[LINESIZE];
     int row=0,col=0;
     char* useless=NULL;
-
     ifp = fopen(fileName,"r");
     if(ifp == NULL) {
         printf("Invalid Input! \n");
@@ -386,7 +339,7 @@ void fillMat(char* fileName,double** inputMat){
     }
     while (fgets(line,LINESIZE,ifp) != NULL){
         token = strtok(line,breaks);
-        while (token != NULL){
+        while (token != NULL) {
             inputMat[row][col] = strtod(token, &useless);
             token = strtok(NULL,breaks);
             col++;
@@ -397,9 +350,6 @@ void fillMat(char* fileName,double** inputMat){
     fclose(ifp);
 }
 
-/*
- *  free memory function
- */
 void freeMemory(double** matrix ,int len){
     int i;
     if(matrix == NULL){
@@ -414,9 +364,6 @@ void freeMemory(double** matrix ,int len){
     free(matrix);
 }
 
-/*
- * Calculate and output the Weighted Adjacency Matrix
- */
 void printWAM(double** matrix, int dim, int num){
     double **wMatrix;
     wMatrix = getWeightedMatrix(matrix, dim, num);
@@ -424,9 +371,6 @@ void printWAM(double** matrix, int dim, int num){
     freeMemory(wMatrix, num);
 }
 
-/*
- * Calculate and output the Diagonal Degree Matrix
- */
 void printDDG(double** matrix, int dim, int num){
     double **dMatrix;
     dMatrix = getDiagonalDegreeMatrix(matrix, dim,num);
@@ -441,9 +385,6 @@ void printLNORM(double** matrix, int dim, int num){
     freeMemory(lMatrix, num);
 }
 
-/*
- * Outputs must be formatted to 4 decimal places.
- */
 void printMat(double** matrix, int rows, int cols){
     int i,j;
     for(i=0;i<rows;i++){
@@ -473,17 +414,11 @@ void printJACOBI(double** matrix, int dim, int num){
     V = jacobiAlgorithm(matrix,num,eigenvalues);
     result = concatenation(V,eigenvalues,num);
 
-
     printMatJacobi(result,dim,num);
-
     freeMemory(V,num);
     free(eigenvalues);
 }
 
-
-/*
- *  Jacobi algorithm
- */
 double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
     double** pMatrix;
     double** ptMatrix;
@@ -496,7 +431,7 @@ double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
 
     A = matrix;
     V = getUnitMatrix(n);
-  
+
     pMatrix = createMat(n,n);
     ptMatrix= createMat(n,n);
 
@@ -509,7 +444,7 @@ double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
     while (itr < MAX_ITER){
         resetMat(n,n,pMatrix);
         resetMat(n,n,ptMatrix);
-        
+
         /*
          * (a) building a rotation matrix P,PT
          */
@@ -518,11 +453,11 @@ double** jacobiAlgorithm(double** matrix, int n, double* eigenvalues){
         /*
          * V = P1 * P2 * . . .
          */
-        
+
         tmp = multiplyMatrices(V, pMatrix, n);
         freeMemory(V, n);
         V = tmp;
-        
+
         /*
          * (b) Transform the matrix A to: A' = P^T * A * P
          */
@@ -559,9 +494,7 @@ void resetMat(int row,int col,double** mat){
         }
     }
 }
-/*
- * check if off(A)^2 - off(A')^2 <= EPSILON
- */
+
 bool convergence(double** matrix1,double** matrix2,int dim){
     double num = offMatrix(matrix1,dim)- offMatrix(matrix2,dim);
     if(num <= EPSILON){
@@ -569,9 +502,7 @@ bool convergence(double** matrix1,double** matrix2,int dim){
     }
     return false;
 }
-/*
- * Let off(A)^2 be the sum of squares of all off-diagonal elements of A respectively.
- */
+
 double offMatrix(double** matrix, int dim) {
     double value = 0;
     int i, j;
@@ -584,25 +515,20 @@ double offMatrix(double** matrix, int dim) {
     }
     return value;
 }
-/*
- * Rotation Matrix P
- */
+
 void RotationMat(double** A,double** pMatrix,double** ptMatrix,int dim){
     int i, j, sign_theta;
     double maxValue;
     int maxROW, maxCOL;
     double theta;
     double t, c, s;
-
     maxValue = A[0][1];
     maxROW = 0;
     maxCOL = 1;
-
     for (i = 0; i < dim; i++){
         pMatrix[i][i] = 1.0;
         ptMatrix[i][i] = 1.0;
     }
-
     /*
      * Pivot :  The Aij is the off-diagonal element with the largest absolute value.
      *          Aij = maxValue , i = maxROW, j = maxCOL.
@@ -616,7 +542,6 @@ void RotationMat(double** A,double** pMatrix,double** ptMatrix,int dim){
             }
         }
     }
-    
     /*
      * Obtain c and t.
      */
@@ -640,7 +565,6 @@ void RotationMat(double** A,double** pMatrix,double** ptMatrix,int dim){
     ptMatrix[maxROW][maxCOL] = -s;
     ptMatrix[maxCOL][maxCOL] = c;
     ptMatrix[maxCOL][maxROW] = s;
-
 }
 
 double** concatenation(double **V, const double* eigenvalues, int dim){
@@ -659,11 +583,6 @@ double** concatenation(double **V, const double* eigenvalues, int dim){
     return result;
 }
 
-
-/*
- * The Eigengap Heuristic
- * In order to determine the number of clusters k, we will use eigengap heuristic.
- */
 int getEigengapHeuristic(double* array,int len){
     int maxIndex;
     int i;
@@ -700,15 +619,12 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
      * 1: Form the weighted adjacency matrix W from X(X:=matrix)
      * 2: Compute the normalized graph Laplacian Lnorm(Lnorm:=lMatrix)
      */
-
     lMatrix = getLaplacianMatrix(matrix, dim, num);
-    
     /*
      * 3: Determine k and obtain the largest k eigenvectors u1,...,uk of Lnorm,
      * eigenvalues must be ordered decreasingly.
      * Determining k would be based on the eigengap heuristic or given as an input.
      */
-
     eigenvalues = (double*) malloc(num * sizeof(double));
     if (!eigenvalues){
         printf("An Error Has Occurred\n");
@@ -717,10 +633,8 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
     for (i =0 ; i < num ; i++) {
         eigenvalues[i] = 0.0;
     }
-    
     vMatrix = jacobiAlgorithm(lMatrix,num,eigenvalues);
     sortingEigenValues(eigenvalues, num, index);
-
     if(k==0){
         K = getEigengapHeuristic(eigenvalues,num);
         k = K;
@@ -734,26 +648,11 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
     /*
      * 4: Let U ∈ Rn×k be the matrix containing the vectors u1,...,uk as columns
      */
-    
-    for(i=0;i<num;i++){
-        for(j=0;j<num;j++){
-            tmp1[i][j]=vMatrix[j][i];
-        }
-    }
-    for(i=0;i<num;i++){
-        for(j=0;j<num;j++){
-            tmp2[i][j]=tmp1[index[i]][j];
-        }
-    }
-        
-    uMatrix= createMat(num, k);
-    tMatrix=createMat(num, k);
-
-    for(i=0;i<num;i++) {
-        for(j=0;j<k;j++){
-            uMatrix[i][j]=tmp2[j][i];
-        }
-    }
+    updateTmp1(tmp1,vMatrix,num);
+    updateTmp2(tmp2,tmp1,index,num);
+    uMatrix = createMat(num, k);
+    tMatrix = createMat(num, k);
+    updateUmatrix(uMatrix,tmp2,num,k);
     /*
      * 5: Form the matrix T ∈ Rn×k from U by renormalizing each of U’s rows to have unit length,
      *     that is set ...
@@ -772,7 +671,6 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
             }
         }
     }
-    
     freeMemory(vMatrix, num);
     freeMemory(tmp1, num);
     freeMemory(tmp2, num);
@@ -780,6 +678,30 @@ double** getTMatrix(double** matrix,int dim, int num, int k){
     free(eigenvalues);
     free(index);
     return tMatrix;
+}
+void updateTmp1(double ** tmp1,double **matrix,int dim){
+    int i,j;
+    for(i=0;i<dim;i++){
+        for(j=0;j<dim;j++){
+            tmp1[i][j]=matrix[j][i];
+        }
+    }
+}
+void updateTmp2(double ** tmp2,double **tmp1,int* index,int dim){
+    int i,j;
+    for(i=0;i<dim;i++){
+        for(j=0;j<dim;j++){
+            tmp2[i][j]=tmp1[index[i]][j];
+        }
+    }
+}
+void updateUmatrix(double **uMatrix,double **tmp2,int num,int k){
+    int i,j;
+    for(i=0;i<num;i++) {
+        for(j=0;j<k;j++){
+            uMatrix[i][j]=tmp2[j][i];
+        }
+    }
 }
 
 void sortingEigenValues(double *arr_double, int len,int* arr_int) {
@@ -801,25 +723,17 @@ void sortingEigenValues(double *arr_double, int len,int* arr_int) {
     }
 }
 
-
-void controlPanel(int k , int max_iter, int d, int numPoints, double **all_points, double **init_centroids) {
+void kmeans(int k , int maxItr, int d, int num, double **inputMatrix, double **init_centroids){
     int vector_dim, i, j, centroid_index, iteration, all_vectors_num;
     double **sum_mat, **old_centroids;
     int *clusters_size;
-    all_vectors_num=numPoints;
+    all_vectors_num=num;
     vector_dim = d;
     iteration = 0;
-    centroids = (double **) malloc(k*sizeof(double*));
-    if (centroids == NULL){
+    centroids = createMat(k,d);
+    if (!centroids){
         printf("An Error Has Occurred\n");
         exit(1);
-    }
-    for (i=0;i<k;i++){
-        centroids[i] = (double*) malloc(d*sizeof(double));
-        if(centroids[i] == NULL){
-            printf("An Error Has Occurred\n");
-            exit(1);
-        }
     }
     for(i=0;i<k;i++){
         for (j=0;j<d;j++) {
@@ -827,40 +741,24 @@ void controlPanel(int k , int max_iter, int d, int numPoints, double **all_point
         }
     }
     freeMemory(init_centroids,k);
-    sum_mat = (double **) malloc(k * sizeof(double*));
-    if (sum_mat == NULL) {
-        printf("An Error Has Occurred\n");
-        exit(1);
-    }
-    for (i = 0; i < k; i++) {
-        sum_mat[i] = (double *) malloc(vector_dim * sizeof(double));
-        if (sum_mat[i] == NULL) {
-            printf("An Error Has Occurred\n");
-            exit(1);
-        }
-    }
-    /*initializing clusters sizes to zero*/
+    sum_mat = createMat(k,vector_dim);
+    /*
+     * initializing clusters sizes to zero
+     */
     clusters_size = (int *) malloc(k * sizeof(int));
-    if (clusters_size == NULL) {
+    if (!clusters_size) {
         printf("An Error Has Occurred\n");
         exit(1);
     }
-    /*memorizing the old centroids in order to calc the norm after updating*/
-    old_centroids = (double **) malloc(k * sizeof(double *));
-    if (old_centroids == NULL) {
+    old_centroids = createMat(k,vector_dim);
+    if (!old_centroids == NULL) {
         printf("An Error Has Occurred\n");
         exit(1);
     }
-    for (j = 0; j < k; j++) {
-        old_centroids[j] = (double *) malloc(vector_dim * sizeof(double));
-        if(old_centroids[j]==NULL){
-            printf("An Error Has Occurred\n");
-            exit(1);
-        }
-    }
-
-    /*ALGORITHM LOOP*/
-    while (iteration < max_iter) {
+    /*
+     * ALGORITHM LOOP
+     */
+    while (iteration < maxItr) {
         /* reset cluster sizes and sum matrix */
         for (i = 0; i < k; i++) {
             clusters_size[i] = 0;
@@ -868,77 +766,78 @@ void controlPanel(int k , int max_iter, int d, int numPoints, double **all_point
                 sum_mat[i][j] = 0;
             }
         }
-        /*calculating new sum matrix with the new clusters' sizes */
         for (j = 0; j < all_vectors_num; j++) {
-            centroid_index = calc_norm(centroids, all_points[j], k,vector_dim);/*calc norm returns index of the current closest centroid to the vector*/
+            centroid_index = calculateNorm(centroids, inputMatrix[j], k, vector_dim);/*calc norm returns index of the current closest centroid to the vector*/
             clusters_size[centroid_index] += 1;
             for (i = 0; i < vector_dim; i++) {
-                sum_mat[centroid_index][i] += all_points[j][i];
+                sum_mat[centroid_index][i] += inputMatrix[j][i];
             }
         }
-        /*substituting centroids into old centroids before updating centroids*/
         for (i = 0; i < k; i++) {
             for (j = 0; j < vector_dim; j++) {
                 old_centroids[i][j] = centroids[i][j];
             }
         }
-        /*calculating the new centroids */
         for (i = 0; i < k; i++) {
             free(centroids[i]);
             centroids[i] = divide(sum_mat[i], clusters_size[i], vector_dim);
         }
         iteration += 1;
     }
-    /* memory releasing */
-    freeMemory(all_points, all_vectors_num);
+    freeMemory(inputMatrix, all_vectors_num);
     freeMemory(old_centroids, k);
     freeMemory(sum_mat,k);
     free(clusters_size);
 }
 
-
-double* divide(double* vector,int num,int vector_dim){
+double* divide(double* vector,int num,int len){
     double *result;
+    double number;
     int i;
-    result = (double*) malloc(vector_dim*sizeof(double ));
-    if(result == NULL){
+    result = (double*) malloc(len * sizeof(double));
+    if(!result){
         printf("An Error Has Occurred\n");
         exit(1);
     }
-    for (i = 0; i < vector_dim; i++) {
-        result[i]=  vector[i]/num;
+    for (i = 0; i < len; i++) {
+        number = vector[i]/num;
+        result[i] = number;
     }
     return result;
 }
-int calc_norm(double** points, double* point, int k, int vector_dim){
-    double closest_norm_value, x;
-    int i, closest_norm;
-    closest_norm =0;
-    closest_norm_value = diff_norm_pow2(points[0], point, vector_dim);
+
+int calculateNorm(double** matrix, double* vector, int k, int dim){
+    double normValue;
+    double tmp;
+    int i;
+    int value = 0;
+    normValue = calculateNormDistance(matrix[0], vector, dim);
     for(i=1;i<k;i++){
-        x = diff_norm_pow2(points[i], point, vector_dim);
-        if(x < closest_norm_value){
-            closest_norm=i;
-            closest_norm_value =x;
+        tmp = calculateNormDistance(matrix[i], vector, dim);
+        if(tmp < normValue){
+            value = i;
+            normValue = tmp;
         }
     }
-    return closest_norm;
+    return value;
 }
-double diff_norm_pow2(double* vector1, double* vector2, int vector_dim){
+double calculateNormDistance(double* vector1, double* vector2, int len){
     double* arr;
     int i;
-    double sum;
-    arr = (double*) malloc(vector_dim*sizeof (double));
-    if(arr ==NULL){
+    double sum = 0;
+    double value;
+    arr = (double*) malloc(len * sizeof (double));
+    if(!arr){
         printf("An Error Has Occurred\n");
         exit(1);
     }
-    for(i=0;i<vector_dim;i++){
-        arr[i]=vector1[i]-vector2[i];
+    for(i=0; i < len; i++){
+        value = vector1[i]-vector2[i];
+        arr[i]= value;
     }
-    sum=0;
-    for(i=0;i<vector_dim;i++){
-        sum = sum + arr[i]*arr[i];
+    for(i=0; i < len; i++){
+        value = sum + arr[i]*arr[i];
+        sum = value;
     }
     free(arr);
     return sum;
